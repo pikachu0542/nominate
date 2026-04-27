@@ -1,1 +1,1 @@
-package nominate
+package main
