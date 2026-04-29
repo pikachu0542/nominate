@@ -2,6 +2,30 @@
 
 Web application to make it easier to manage and track E-Board election nominations
 
+## Modifying the Database
+
+In order to make changes to the database schema, you will have to generate a new migration and then write the SQL that will make the desired modification(s)
+
+### Generating a Migration
+
+Run the following command to generate a new migration:
+
+```
+goose -s create my_migration_name sql
+```
+
+This command can be broken down into individual tokens:
+
+- `goose` invokes the CLI program for the goose migration library
+- `create` indicates that you want to create a new migration
+- `my_migration_name` is the name of the migration file
+- `sql` is the extension that will be applied to the migration file. 
+  - The allowed values are `sql` and `go`, but this project uses `sql` for migration files
+
+The resulting migration file will follow the format: `timestamp_my_migration_name.sql`. While goose also allows migration files to be identified sequentially, it is best practice to use timestamp for your migrations in order to prevent merge conflicts.
+
+I plan to set up a CI/CD pipeline that will convert timestamp identified migration files to sequential ones for production/
+
 ## TODO
 
 - [] Allow Chair to open nominations and start accepting nominations
