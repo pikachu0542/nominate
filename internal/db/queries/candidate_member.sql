@@ -1,7 +1,6 @@
--- name: AddMemberToCandidate :one
+-- name: AddMemberToCandidate :exec
 INSERT INTO candidate_member (candidate_id, username)
-VALUES ($1, $2)
-RETURNING *;
+VALUES ($1, $2);
 
 -- name: ListMembersOfCandidate :many
 SELECT *

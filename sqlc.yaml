@@ -5,6 +5,6 @@ sql:
     queries: "internal/db/queries/"
     gen:
       go:
-        package: "internal/db"
+        package: "db"
         out: "internal/db"
         sql_package: "pgx/v5"

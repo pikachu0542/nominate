@@ -159,22 +159,13 @@ func (q *Queries) ListPeriodsPendingConsolidation(ctx context.Context) ([]Nomina
 	return items, nil
 }
 
-const setPeriodConsolidated = `-- name: SetPeriodConsolidated :one
+const setPeriodConsolidated = `-- name: SetPeriodConsolidated :exec
 UPDATE nomination_period
 SET consolidated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, position_id, opens_at, closes_at, consolidated_at
 `
 
-func (q *Queries) SetPeriodConsolidated(ctx context.Context, id int32) (NominationPeriod, error) {
-	row := q.db.QueryRow(ctx, setPeriodConsolidated, id)
-	var i NominationPeriod
-	err := row.Scan(
-		&i.ID,
-		&i.PositionID,
-		&i.OpensAt,
-		&i.ClosesAt,
-		&i.ConsolidatedAt,
-	)
-	return i, err
+func (q *Queries) SetPeriodConsolidated(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, setPeriodConsolidated, id)
+	return err
 }

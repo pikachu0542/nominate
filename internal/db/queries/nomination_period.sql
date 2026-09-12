@@ -25,8 +25,7 @@ FROM nomination_period
 WHERE consolidated_at IS NULL
 ORDER BY opens_at ASC;
 
--- name: SetPeriodConsolidated :one
+-- name: SetPeriodConsolidated :exec
 UPDATE nomination_period
 SET consolidated_at = CURRENT_TIMESTAMP
-WHERE id = $1
-RETURNING *;
+WHERE id = $1;

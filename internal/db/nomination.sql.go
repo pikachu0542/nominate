@@ -32,6 +32,40 @@ func (q *Queries) CreateNomination(ctx context.Context, arg CreateNominationPara
 	return i, err
 }
 
+const getNominatedUsersForPeriod = `-- name: GetNominatedUsersForPeriod :many
+SELECT n.id AS nomination_id, n.position_id, nu.username
+FROM nomination n
+JOIN nominated_user nu ON nu.nomination_id = n.id
+WHERE n.period_id = $1
+ORDER BY n.id
+`
+
+type GetNominatedUsersForPeriodRow struct {
+	NominationID int32
+	PositionID   int32
+	Username     string
+}
+
+func (q *Queries) GetNominatedUsersForPeriod(ctx context.Context, periodID int32) ([]GetNominatedUsersForPeriodRow, error) {
+	rows, err := q.db.Query(ctx, getNominatedUsersForPeriod, periodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNominatedUsersForPeriodRow
+	for rows.Next() {
+		var i GetNominatedUsersForPeriodRow
+		if err := rows.Scan(&i.NominationID, &i.PositionID, &i.Username); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getNominationsForPeriod = `-- name: GetNominationsForPeriod :many
 SELECT id, position_id, period_id, submitted_at
 FROM nomination
