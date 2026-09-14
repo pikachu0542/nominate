@@ -7,18 +7,19 @@ import (
 	"strings"
 
 	"github.com/computersciencehouse/nominate/internal/db"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Runs the consolidation process on nominations submitted for a particular period
-func RunConsolidation(ctx context.Context, q *db.Queries) error {
+func RunConsolidation(ctx context.Context, pool *pgxpool.Pool, q *db.Queries) error {
 	periods, err := q.ListPeriodsPendingConsolidation(ctx)
 	if err != nil {
-		return fmt.Errorf("listing periods pending consolidation: %w", err)
+		return fmt.Errorf("Error while listing periods pending consolidation: %w", err)
 	}
 
 	for _, period := range periods {
-		if err := consolidatePeriod(ctx, q, period.ID, period.PositionID); err != nil {
-			fmt.Printf("consolidation failed for period %d: %v\n", period.ID, err)
+		if err := consolidatePeriod(ctx, pool, q, period.ID, period.PositionID); err != nil {
+			fmt.Printf("Consolidation failed for period %d: %v\n", period.ID, err)
 			continue
 		}
 	}
@@ -27,14 +28,30 @@ func RunConsolidation(ctx context.Context, q *db.Queries) error {
 }
 
 // Checks all submitted nominations for a given period, and stores all unique submissions in the database as candidates
-func consolidatePeriod(ctx context.Context, q *db.Queries, periodID, positionID int32) error {
-	rows, err := q.GetNominatedUsersForPeriod(ctx, periodID)
+// This operation is performed in a transaction, which ensures that if an error occurs before all members of a candidate
+// are processed, any already completed operations will be rolled back. This means there should never be partially populated candidates
+func consolidatePeriod(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, periodID, positionID int32) error {
+	tx, err := pool.Begin(ctx)
+
 	if err != nil {
-		return fmt.Errorf("fetching nominated users: %w", err)
+		return fmt.Errorf("Error while beginning transaction: %w", err)
+	}
+	// If an error occurred before adding all members to a candidate, rollback the transaction
+	defer tx.Rollback(ctx)
+
+	qtx := q.WithTx(tx)
+
+	rows, err := qtx.GetNominatedUsersForPeriod(ctx, periodID)
+	if err != nil {
+		return fmt.Errorf("Error while fetching nominated users for period %d: %w", periodID, err)
 	}
 
 	if len(rows) == 0 {
-		return q.SetPeriodConsolidated(ctx, periodID)
+		if err := qtx.SetPeriodConsolidated(ctx, periodID); err != nil {
+			return fmt.Errorf("Error marking period %d as consolidated: %w", periodID, err)
+		}
+		// Assuming all operations in the transaction were successful, commit to the database to make them permanent
+		return tx.Commit(ctx)
 	}
 
 	membersByNomination := map[int32][]string{}
@@ -62,7 +79,7 @@ func consolidatePeriod(ctx context.Context, q *db.Queries, periodID, positionID 
 			PositionID: positionID,
 		})
 		if err != nil {
-			return fmt.Errorf("Error while creating candidate: %w", err)
+			return fmt.Errorf("Error trying to create a candidate for period %d: %w", periodID, err)
 		}
 
 		// Add the users to candidates as necessary
@@ -71,10 +88,16 @@ func consolidatePeriod(ctx context.Context, q *db.Queries, periodID, positionID 
 				CandidateID: candidate.ID,
 				Username:    username,
 			}); err != nil {
-				return fmt.Errorf("Error while adding candidate member %s: %w", username, err)
+				return fmt.Errorf("Error while adding user %s to candidate %d: %w", username, candidate.ID, err)
 			}
 		}
 	}
 
-	return q.SetPeriodConsolidated(ctx, periodID)
+	if err := qtx.SetPeriodConsolidated(ctx, periodID); err != nil {
+		return fmt.Errorf("Error while marking period %d as consolidated: %w", periodID, err)
+	}
+
+	// Commit the transaction to the database, making the changes permanent
+	// This only runs if all operations within the transaction were successful
+	return tx.Commit(ctx)
 }

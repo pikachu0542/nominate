@@ -13,3 +13,12 @@ UPDATE candidate_decision
 SET notified_at = CURRENT_TIMESTAMP
 WHERE candidate_id = $1 AND username = $2
 RETURNING *;
+
+-- name: ListPendingDecisionsPastDeadline :many
+SELECT * FROM candidate_decision
+WHERE status = 'pending' AND response_deadline < now();
+
+-- name: DeclineExpiredDecision :exec
+UPDATE candidate_decision
+SET status = 'declined', responded_at = now()
+WHERE id = $1 AND status = 'pending';

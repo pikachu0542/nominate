@@ -44,6 +44,17 @@ func (q *Queries) CreateCandidateDecision(ctx context.Context, arg CreateCandida
 	return i, err
 }
 
+const declineExpiredDecision = `-- name: DeclineExpiredDecision :exec
+UPDATE candidate_decision
+SET status = 'declined', responded_at = now()
+WHERE id = $1 AND status = 'pending'
+`
+
+func (q *Queries) DeclineExpiredDecision(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, declineExpiredDecision, id)
+	return err
+}
+
 const getCandidateDecision = `-- name: GetCandidateDecision :one
 SELECT id, candidate_id, username, status, notified_at, responded_at, response_deadline
 FROM candidate_decision
@@ -68,6 +79,39 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 		&i.ResponseDeadline,
 	)
 	return i, err
+}
+
+const listPendingDecisionsPastDeadline = `-- name: ListPendingDecisionsPastDeadline :many
+SELECT id, candidate_id, username, status, notified_at, responded_at, response_deadline FROM candidate_decision
+WHERE status = 'pending' AND response_deadline < now()
+`
+
+func (q *Queries) ListPendingDecisionsPastDeadline(ctx context.Context) ([]CandidateDecision, error) {
+	rows, err := q.db.Query(ctx, listPendingDecisionsPastDeadline)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CandidateDecision
+	for rows.Next() {
+		var i CandidateDecision
+		if err := rows.Scan(
+			&i.ID,
+			&i.CandidateID,
+			&i.Username,
+			&i.Status,
+			&i.NotifiedAt,
+			&i.RespondedAt,
+			&i.ResponseDeadline,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const markNotified = `-- name: MarkNotified :one
