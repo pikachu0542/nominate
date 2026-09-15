@@ -32,7 +32,6 @@ func RunConsolidation(ctx context.Context, pool *pgxpool.Pool, q *db.Queries) er
 // are processed, any already completed operations will be rolled back. This means there should never be partially populated candidates
 func consolidatePeriod(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, periodID, positionID int32) error {
 	tx, err := pool.Begin(ctx)
-
 	if err != nil {
 		return fmt.Errorf("Error while beginning transaction: %w", err)
 	}

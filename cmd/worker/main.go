@@ -9,9 +9,13 @@ import (
 	"github.com/computersciencehouse/nominate/internal/config"
 	"github.com/computersciencehouse/nominate/internal/db"
 	"github.com/computersciencehouse/nominate/internal/worker"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	godotenv.Load()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
