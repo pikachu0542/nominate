@@ -36,6 +36,10 @@ func (s *Server) RegisterRoutes(router *gin.Engine, csh cshAuth.CSHAuth) {
 	position.GET("", csh.AuthWrapper(s.listPositions))
 	position.POST("", csh.AuthWrapper(s.createPosition))
 
+	period := router.Group("/period")
+	period.GET("/all", csh.AuthWrapper(s.listAllPeriods))
+	period.POST("/create", csh.AuthWrapper(s.createPeriod))
+
 	router.GET("/", csh.AuthWrapper(s.GetHomepage))
 
 	// Health check
