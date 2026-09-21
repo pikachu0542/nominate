@@ -7,8 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const createNominationPeriod = `-- name: CreateNominationPeriod :one
@@ -19,15 +18,15 @@ RETURNING id, position_id, opens_at, closes_at
 
 type CreateNominationPeriodParams struct {
 	PositionID int32
-	OpensAt    pgtype.Timestamptz
-	ClosesAt   pgtype.Timestamptz
+	OpensAt    time.Time
+	ClosesAt   time.Time
 }
 
 type CreateNominationPeriodRow struct {
 	ID         int32
 	PositionID int32
-	OpensAt    pgtype.Timestamptz
-	ClosesAt   pgtype.Timestamptz
+	OpensAt    time.Time
+	ClosesAt   time.Time
 }
 
 func (q *Queries) CreateNominationPeriod(ctx context.Context, arg CreateNominationPeriodParams) (CreateNominationPeriodRow, error) {

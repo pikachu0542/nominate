@@ -7,8 +7,7 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type DecisionStatus string
@@ -58,7 +57,7 @@ type Candidate struct {
 	ID         int32
 	PeriodID   int32
 	PositionID int32
-	CreatedAt  pgtype.Timestamptz
+	CreatedAt  time.Time
 }
 
 type CandidateDecision struct {
@@ -66,9 +65,9 @@ type CandidateDecision struct {
 	CandidateID      int32
 	Username         string
 	Status           DecisionStatus
-	NotifiedAt       pgtype.Timestamptz
-	RespondedAt      pgtype.Timestamptz
-	ResponseDeadline pgtype.Timestamptz
+	NotifiedAt       *time.Time
+	RespondedAt      *time.Time
+	ResponseDeadline time.Time
 }
 
 type CandidateMember struct {
@@ -87,15 +86,15 @@ type Nomination struct {
 	ID          int32
 	PositionID  int32
 	PeriodID    int32
-	SubmittedAt pgtype.Timestamptz
+	SubmittedAt time.Time
 }
 
 type NominationPeriod struct {
 	ID             int32
 	PositionID     int32
-	OpensAt        pgtype.Timestamptz
-	ClosesAt       pgtype.Timestamptz
-	ConsolidatedAt pgtype.Timestamptz
+	OpensAt        time.Time
+	ClosesAt       time.Time
+	ConsolidatedAt *time.Time
 }
 
 type Position struct {

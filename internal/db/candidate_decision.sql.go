@@ -7,8 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const createCandidateDecision = `-- name: CreateCandidateDecision :one
@@ -21,7 +20,7 @@ type CreateCandidateDecisionParams struct {
 	CandidateID      int32
 	Username         string
 	Status           DecisionStatus
-	ResponseDeadline pgtype.Timestamptz
+	ResponseDeadline time.Time
 }
 
 func (q *Queries) CreateCandidateDecision(ctx context.Context, arg CreateCandidateDecisionParams) (CandidateDecision, error) {
