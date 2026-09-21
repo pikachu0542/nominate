@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 
+	"github.com/computersciencehouse/nominate/internal/api"
 	"github.com/computersciencehouse/nominate/internal/config"
 	"github.com/computersciencehouse/nominate/internal/db"
 	"github.com/gin-gonic/gin"
@@ -47,24 +49,15 @@ func main() {
 		[]string{"profile", "email", "groups"},
 	)
 
-	if err != nil {
-		log.Panicf("Error initializing CSH auth: %v", err)
-	}
-
 	queries := db.New(pool)
-	_ = queries
+
+	server := api.NewServer(queries, cfg)
 
 	router := gin.Default()
+	router.StaticFS("/static", http.Dir("static"))
+	router.LoadHTMLGlob("templates/*")
 
-	// Routes to handle CSH auth
-	router.GET("/auth/login", csh.AuthRequest)
-	router.GET("/auth/callback", csh.AuthCallback)
-	router.GET("/auth/logout", csh.AuthLogout)
-
-	// Health check route - basically just for ensuring the server is still up
-	router.GET("/health", csh.AuthWrapper(func(c *gin.Context) {
-		c.String(200, "Ok")
-	}))
+	server.RegisterRoutes(router, csh)
 
 	// Start the server
 	router.Run(":" + cfg.Port)
