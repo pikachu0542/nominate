@@ -1,0 +1,14 @@
+    {{ template "header.tmpl" . }}
+
+    <div class="main p-5 error-page text-center">
+      <img id="lockdown" src="/static/material_lock.svg" alt="Attention!" width="256"/>
+      <h1 class="my-4">You aren't permitted to perform this operation</h1>
+      <p class="fs-4 my-3">
+        Only members of the {{ .AllowedGroups }} group are allowed to perform this operation
+      </p>
+      <p class="fs-4">
+        If you think this is an error, try logging out and back in. If that doesn't work, contact an RTP.
+      </p>
+    </div>
+  </body>
+</html>
