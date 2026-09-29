@@ -1,0 +1,14 @@
+    {{ template "header.tmpl" . }}
+
+    <div class="main p-5 error-page text-center">
+      <img id="lockdown" src="/static/error.svg" alt="Error!" width="256"/>
+      <h1 class="my-4">The server encountered an error trying to perform this operation</h1>
+      <p class="fs-4 my-3">
+        Reported error message: {{ .Error }}
+      </p>
+      <p class="fs-4">
+        If the error persists, contact an RTP.
+      </p>
+    </div>
+  </body>
+</html>

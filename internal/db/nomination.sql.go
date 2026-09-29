@@ -32,7 +32,7 @@ func (q *Queries) CreateNomination(ctx context.Context, arg CreateNominationPara
 	return i, err
 }
 
-const getNominatedUsersForPeriod = `-- name: GetNominatedUsersForPeriod :many
+const listNominatedUsersForPeriod = `-- name: ListNominatedUsersForPeriod :many
 SELECT n.id AS nomination_id, n.position_id, nu.username
 FROM nomination n
 JOIN nominated_user nu ON nu.nomination_id = n.id
@@ -40,21 +40,21 @@ WHERE n.period_id = $1
 ORDER BY n.id
 `
 
-type GetNominatedUsersForPeriodRow struct {
+type ListNominatedUsersForPeriodRow struct {
 	NominationID int32
 	PositionID   int32
 	Username     string
 }
 
-func (q *Queries) GetNominatedUsersForPeriod(ctx context.Context, periodID int32) ([]GetNominatedUsersForPeriodRow, error) {
-	rows, err := q.db.Query(ctx, getNominatedUsersForPeriod, periodID)
+func (q *Queries) ListNominatedUsersForPeriod(ctx context.Context, periodID int32) ([]ListNominatedUsersForPeriodRow, error) {
+	rows, err := q.db.Query(ctx, listNominatedUsersForPeriod, periodID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetNominatedUsersForPeriodRow
+	var items []ListNominatedUsersForPeriodRow
 	for rows.Next() {
-		var i GetNominatedUsersForPeriodRow
+		var i ListNominatedUsersForPeriodRow
 		if err := rows.Scan(&i.NominationID, &i.PositionID, &i.Username); err != nil {
 			return nil, err
 		}
@@ -66,15 +66,15 @@ func (q *Queries) GetNominatedUsersForPeriod(ctx context.Context, periodID int32
 	return items, nil
 }
 
-const getNominationsForPeriod = `-- name: GetNominationsForPeriod :many
+const listNominationsForPeriod = `-- name: ListNominationsForPeriod :many
 SELECT id, position_id, period_id, submitted_at
 FROM nomination
 WHERE period_id = $1
 ORDER BY position_id ASC
 `
 
-func (q *Queries) GetNominationsForPeriod(ctx context.Context, periodID int32) ([]Nomination, error) {
-	rows, err := q.db.Query(ctx, getNominationsForPeriod, periodID)
+func (q *Queries) ListNominationsForPeriod(ctx context.Context, periodID int32) ([]Nomination, error) {
+	rows, err := q.db.Query(ctx, listNominationsForPeriod, periodID)
 	if err != nil {
 		return nil, err
 	}

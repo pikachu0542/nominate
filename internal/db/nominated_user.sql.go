@@ -9,10 +9,9 @@ import (
 	"context"
 )
 
-const addNominatedUser = `-- name: AddNominatedUser :one
+const addNominatedUser = `-- name: AddNominatedUser :exec
 INSERT INTO nominated_user (username, nomination_id)
 VALUES ($1, $2)
-RETURNING id, username, nomination_id
 `
 
 type AddNominatedUserParams struct {
@@ -20,11 +19,9 @@ type AddNominatedUserParams struct {
 	NominationID int32
 }
 
-func (q *Queries) AddNominatedUser(ctx context.Context, arg AddNominatedUserParams) (NominatedUser, error) {
-	row := q.db.QueryRow(ctx, addNominatedUser, arg.Username, arg.NominationID)
-	var i NominatedUser
-	err := row.Scan(&i.ID, &i.Username, &i.NominationID)
-	return i, err
+func (q *Queries) AddNominatedUser(ctx context.Context, arg AddNominatedUserParams) error {
+	_, err := q.db.Exec(ctx, addNominatedUser, arg.Username, arg.NominationID)
+	return err
 }
 
 const listUsersInNomination = `-- name: ListUsersInNomination :many

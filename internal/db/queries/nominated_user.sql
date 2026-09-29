@@ -1,7 +1,6 @@
--- name: AddNominatedUser :one
+-- name: AddNominatedUser :exec
 INSERT INTO nominated_user (username, nomination_id)
-VALUES ($1, $2)
-RETURNING *;
+VALUES ($1, $2);
 
 -- name: ListUsersInNomination :many
 SELECT *

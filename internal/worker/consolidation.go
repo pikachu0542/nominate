@@ -40,7 +40,7 @@ func consolidatePeriod(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, p
 
 	qtx := q.WithTx(tx)
 
-	rows, err := qtx.GetNominatedUsersForPeriod(ctx, periodID)
+	rows, err := qtx.ListNominatedUsersForPeriod(ctx, periodID)
 	if err != nil {
 		return fmt.Errorf("Error while fetching nominated users for period %d: %w", periodID, err)
 	}
