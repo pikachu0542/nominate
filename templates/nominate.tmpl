@@ -1,0 +1,53 @@
+{{ define "nominate.tmpl" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Submit a Nomination</title>
+	<link href="/static/css/csh-material-bootstrap.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+	<div class="container py-5">
+		<h1 class="mb-4">Submit a Nomination</h1>
+
+		{{ if .Success }}
+			<div class="alert alert-success">Nomination submitted!</div>
+		{{ end }}
+		{{ if .Error }}
+			<div class="alert alert-danger">{{ .Error }}</div>
+		{{ end }}
+
+		{{ if not .Periods }}
+			<div class="alert alert-info">There are no nomination periods currently open.</div>
+		{{ else }}
+		<form method="POST" action="/nominate" class="card p-4 shadow-sm">
+			<div class="mb-3">
+				<label for="period_id" class="form-label">Position</label>
+				<select class="form-select" id="period_id" name="period_id" required>
+					<option value="" disabled selected>Select a position...</option>
+					{{ range .Periods }}
+					<option value="{{ .PeriodID }}">{{ .PositionName }} (closes {{ .ClosesAt.Format "Jan 2, 3:04 PM" }})</option>
+					{{ end }}
+				</select>
+			</div>
+
+			<div class="mb-3">
+				<label for="usernames" class="form-label">Nominate</label>
+				<select class="form-select" id="usernames" name="usernames" multiple size="8" required>
+					{{ range .Members }}
+					<option value="{{ .Username }}">{{ .Username }}</option>
+					{{ end }}
+				</select>
+				<div class="form-text">
+					Hold Ctrl (Windows/Linux) or Cmd (Mac) to select more than one person for a joint candidacy.
+					You can also type a username to jump to it in the list.
+				</div>
+			</div>
+
+			<button type="submit" class="btn btn-primary">Submit Nomination</button>
+		</form>
+		{{ end }}
+	</div>
+</body>
+</html>
+{{ end }}

@@ -125,6 +125,48 @@ func (q *Queries) ListOpenNominationPeriods(ctx context.Context) ([]NominationPe
 	return items, nil
 }
 
+const listOpenPeriodsWithPosition = `-- name: ListOpenPeriodsWithPosition :many
+SELECT np.id AS period_id, np.position_id, p.position_name, np.opens_at, np.closes_at
+FROM nomination_period np
+JOIN position p ON p.id = np.position_id
+WHERE np.opens_at <= now() AND np.closes_at > now()
+ORDER BY np.opens_at
+`
+
+type ListOpenPeriodsWithPositionRow struct {
+	PeriodID     int32
+	PositionID   int32
+	PositionName string
+	OpensAt      time.Time
+	ClosesAt     time.Time
+}
+
+func (q *Queries) ListOpenPeriodsWithPosition(ctx context.Context) ([]ListOpenPeriodsWithPositionRow, error) {
+	rows, err := q.db.Query(ctx, listOpenPeriodsWithPosition)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOpenPeriodsWithPositionRow
+	for rows.Next() {
+		var i ListOpenPeriodsWithPositionRow
+		if err := rows.Scan(
+			&i.PeriodID,
+			&i.PositionID,
+			&i.PositionName,
+			&i.OpensAt,
+			&i.ClosesAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPeriodsPendingConsolidation = `-- name: ListPeriodsPendingConsolidation :many
 SELECT id, position_id, opens_at, closes_at, consolidated_at
 FROM nomination_period

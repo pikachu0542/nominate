@@ -14,6 +14,13 @@ FROM nomination_period
 WHERE consolidated_at IS NULL
 ORDER BY opens_at ASC;
 
+-- name: ListOpenPeriodsWithPosition :many
+SELECT np.id AS period_id, np.position_id, p.position_name, np.opens_at, np.closes_at
+FROM nomination_period np
+JOIN position p ON p.id = np.position_id
+WHERE np.opens_at <= now() AND np.closes_at > now()
+ORDER BY np.opens_at;
+    
 -- name: ListAllNominationPeriods :many
 SELECT *
 FROM nomination_period

@@ -80,8 +80,60 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 	return i, err
 }
 
+const listDecisionsForUser = `-- name: ListDecisionsForUser :many
+SELECT cd.id, cd.candidate_id, cd.username, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline, c.position_id, c.period_id
+FROM candidate_decision AS cd
+JOIN candidate AS c 
+ON c.id = cd.candidate_id
+WHERE cd.username = $1
+ORDER BY cd.response_deadline
+`
+
+type ListDecisionsForUserRow struct {
+	ID               int32
+	CandidateID      int32
+	Username         string
+	Status           DecisionStatus
+	NotifiedAt       *time.Time
+	RespondedAt      *time.Time
+	ResponseDeadline time.Time
+	PositionID       int32
+	PeriodID         int32
+}
+
+func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]ListDecisionsForUserRow, error) {
+	rows, err := q.db.Query(ctx, listDecisionsForUser, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDecisionsForUserRow
+	for rows.Next() {
+		var i ListDecisionsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CandidateID,
+			&i.Username,
+			&i.Status,
+			&i.NotifiedAt,
+			&i.RespondedAt,
+			&i.ResponseDeadline,
+			&i.PositionID,
+			&i.PeriodID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPendingDecisionsPastDeadline = `-- name: ListPendingDecisionsPastDeadline :many
-SELECT id, candidate_id, username, status, notified_at, responded_at, response_deadline FROM candidate_decision
+SELECT id, candidate_id, username, status, notified_at, responded_at, response_deadline 
+FROM candidate_decision
 WHERE status = 'pending' AND response_deadline < now()
 `
 
@@ -127,6 +179,34 @@ type MarkNotifiedParams struct {
 
 func (q *Queries) MarkNotified(ctx context.Context, arg MarkNotifiedParams) (CandidateDecision, error) {
 	row := q.db.QueryRow(ctx, markNotified, arg.CandidateID, arg.Username)
+	var i CandidateDecision
+	err := row.Scan(
+		&i.ID,
+		&i.CandidateID,
+		&i.Username,
+		&i.Status,
+		&i.NotifiedAt,
+		&i.RespondedAt,
+		&i.ResponseDeadline,
+	)
+	return i, err
+}
+
+const respondToDecision = `-- name: RespondToDecision :one
+UPDATE candidate_decision
+SET status = $2, responded_at = now()
+WHERE id = $1 AND username = $3 AND status = 'pending'
+RETURNING id, candidate_id, username, status, notified_at, responded_at, response_deadline
+`
+
+type RespondToDecisionParams struct {
+	ID       int32
+	Status   DecisionStatus
+	Username string
+}
+
+func (q *Queries) RespondToDecision(ctx context.Context, arg RespondToDecisionParams) (CandidateDecision, error) {
+	row := q.db.QueryRow(ctx, respondToDecision, arg.ID, arg.Status, arg.Username)
 	var i CandidateDecision
 	err := row.Scan(
 		&i.ID,

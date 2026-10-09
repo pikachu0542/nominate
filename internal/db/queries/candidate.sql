@@ -15,7 +15,8 @@ WHERE period_id = $1
 ORDER BY position_id ASC;
 
 -- name: ListCandidatesWithMembers :many
-SELECT c.id AS candidate_id, c.period_id, c.position_id, array_agg(cm.username) AS members
+SELECT c.id AS candidate_id, c.period_id, c.position_id, 
+    array_agg(cm.username)::text[] AS members
 FROM candidate c
 LEFT JOIN candidate_member cm ON c.id = cm.candidate_id
 WHERE c.period_id = $1

@@ -66,6 +66,7 @@ func consolidatePeriod(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, p
 		sorted := append([]string(nil), members...)
 		sort.Strings(sorted)
 		key := groupKey(strings.Join(sorted, ","))
+
 		if _, exists := groups[key]; !exists {
 			groups[key] = sorted
 		}

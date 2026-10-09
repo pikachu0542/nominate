@@ -8,6 +8,7 @@ import (
 	"github.com/computersciencehouse/nominate/internal/api"
 	"github.com/computersciencehouse/nominate/internal/config"
 	"github.com/computersciencehouse/nominate/internal/db"
+	"github.com/computersciencehouse/nominate/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -49,9 +50,11 @@ func main() {
 		[]string{"profile", "email", "groups"},
 	)
 
+	oidcClient := util.NewOIDCClient(cfg.Auth.ClientID, cfg.Auth.ClientSecret)
+
 	queries := db.New(pool)
 
-	server := api.NewServer(queries, cfg)
+	server := api.NewServer(queries, cfg, pool, oidcClient)
 
 	router := gin.Default()
 	router.StaticFS("/static", http.Dir("static"))

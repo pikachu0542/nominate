@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/computersciencehouse/nominate/internal/db"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// Create a new nomination period
 func (s *Server) createPeriod(c *gin.Context) {
 	user := util.GetUserData(c)
 
@@ -50,7 +52,9 @@ func (s *Server) createPeriod(c *gin.Context) {
 		}
 
 		// Some other error
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up specified position"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Error": err.Error(),
+		})
 		return
 	}
 
@@ -61,29 +65,62 @@ func (s *Server) createPeriod(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create nomination period"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Error": err.Error(),
+		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, period)
 }
 
-// func (s *Server) getPeriodById(c *gin.Context) {
-// 	user := util.GetUserData(c)
+func (s *Server) getPeriodById(c *gin.Context) {
+	// user := util.GetUserData(c)
 
-// }
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
 
-// func (s *Server) listOpenPeriods(c *gin.Context) {
-// 	user := util.GetUserData(c)
+	period, err := s.Queries.GetNominationPeriod(c.Request.Context(), int32(id))
+	if err != nil {
+		// No period with the specified id
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No period found with that id"})
+			return
+		}
 
-// }
+		// Any other error
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, period)
+
+}
+
+// Lists all periods that are currently accepting nominations
+func (s *Server) listOpenPeriods(c *gin.Context) {
+	// user := util.GetUserData(c)
+
+	periods, err := s.Queries.ListOpenNominationPeriods(c.Request.Context())
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Error": err.Error(),
+		})
+	}
+	c.JSON(http.StatusOK, periods)
+
+}
 
 // Retreives a list of every existing nomination period
 func (s *Server) listAllPeriods(c *gin.Context) {
 	user := util.GetUserData(c)
 
 	if !util.IsEboard(s.Cfg, user) {
-		// TODO: Create a forbidden template page and replace the JSON with that
 		c.HTML(http.StatusForbidden, "forbidden.tmpl", gin.H{
 			"AllowedGroups": "eboard",
 		})
@@ -92,21 +129,12 @@ func (s *Server) listAllPeriods(c *gin.Context) {
 
 	periods, err := s.Queries.ListAllNominationPeriods(c.Request.Context())
 	if err != nil {
-		// TODO: Create a page for internal server error and replace the JSON with it
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list all nomination periods"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Error": err.Error(),
+		})
 		return
 	}
 
 	// TODO: Create a history page that lists all periods and display that instead
 	c.JSON(http.StatusOK, periods)
 }
-
-// func (s *Server) listPeriodsPendingConsolidation(c *gin.Context) {
-// 	user := util.GetUserData(c)
-
-// }
-
-// func (s *Server) setPeriodConsolidated(c *gin.Context) {
-// 	user := util.GetUserData(c)
-
-// }

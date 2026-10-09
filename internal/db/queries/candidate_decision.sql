@@ -15,10 +15,25 @@ WHERE candidate_id = $1 AND username = $2
 RETURNING *;
 
 -- name: ListPendingDecisionsPastDeadline :many
-SELECT * FROM candidate_decision
+SELECT * 
+FROM candidate_decision
 WHERE status = 'pending' AND response_deadline < now();
 
 -- name: DeclineExpiredDecision :exec
 UPDATE candidate_decision
 SET status = 'declined', responded_at = now()
 WHERE id = $1 AND status = 'pending';
+
+-- name: RespondToDecision :one
+UPDATE candidate_decision
+SET status = $2, responded_at = now()
+WHERE id = $1 AND username = $3 AND status = 'pending'
+RETURNING *;
+
+-- name: ListDecisionsForUser :many
+SELECT cd.*, c.position_id, c.period_id
+FROM candidate_decision AS cd
+JOIN candidate AS c 
+ON c.id = cd.candidate_id
+WHERE cd.username = $1
+ORDER BY cd.response_deadline;

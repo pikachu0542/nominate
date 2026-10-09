@@ -2,6 +2,8 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"slices"
@@ -32,6 +34,12 @@ type OIDCUser struct {
 }
 
 var groupCache map[string]string
+
+func NewOIDCClient(clientID, clientSecret string) *OIDCClient {
+	client := &OIDCClient{quit: make(chan struct{})}
+	client.setupOidcClient(clientID, clientSecret)
+	return client
+}
 
 func (client *OIDCClient) setupOidcClient(oidcClientId, oidcClientSecret string) {
 	client.oidcClientId = oidcClientId
@@ -97,6 +105,84 @@ func GetUserData(c *gin.Context) cshAuth.CSHUserInfo {
 	cl, _ := c.Get("cshauth")
 	user := cl.(cshAuth.CSHClaims).UserInfo
 	return user
+}
+
+// Retreives the ID of a specific OIDC group
+// Will be used to get the members of a group
+func (client *OIDCClient) FindOIDCGroupID(name string) string {
+	if groupCache[name] != "" {
+		return groupCache[name]
+	}
+	htclient := &http.Client{}
+	//active
+	req, err := http.NewRequest("GET", client.providerBase+"/auth/admin/realms/csh/groups?exact=true&search="+name, nil)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "FindOIDCGroupID"}).Error(err)
+		return ""
+	}
+	req.Header.Add("Authorization", "Bearer "+client.accessToken)
+	resp, err := htclient.Do(req)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "FindOIDCGroupID"}).Error(err)
+		return ""
+	}
+	defer resp.Body.Close()
+	ret := make([]map[string]any, 0)
+	err = json.NewDecoder(resp.Body).Decode(&ret)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "FindOIDCGroupID"}).Error(err)
+		return ""
+	}
+	//Example:
+	//[{"id":"47dd1a94-853c-426d-b181-6d0714074892","name":"eboard","path":"/eboard","subGroups":[{"id":"66b9578a-2b58-46a6-8040-59388e57e830","name":"eboard-opcomm","path":"/eboard/eboard-opcomm","subGroups":[]}]}]
+	//it returns as an array for SOME reason, so we cut to the group we want
+	group := ret[0]
+	// and now we have SUBgroups, so we do this fucked parse
+	subGroups := group["subGroups"].([]any)
+	fmt.Println(subGroups)
+	subGroup := subGroups[0].(map[string]interface{})
+	fmt.Println(subGroup)
+	gid := subGroup["id"].(string)
+	groupCache[name] = gid
+	return gid
+
+}
+
+// Retreives a list of users in a specific OIDC group
+func (client *OIDCClient) GetOIDCGroup(groupID string) []OIDCUser {
+	htclient := &http.Client{}
+	//active
+	req, err := http.NewRequest("GET", client.providerBase+"/auth/admin/realms/csh/groups/"+groupID+"/members", nil)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup"}).Error(err)
+		return nil
+	}
+	req.Header.Add("Authorization", "Bearer "+client.accessToken)
+	resp, err := htclient.Do(req)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup"}).Error(err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		logging.Logger.WithFields(logrus.Fields{
+			"method":     "GetOIDCGroup",
+			"statusCode": resp.StatusCode,
+			"body":       string(body),
+			"groupID":    groupID,
+		}).Error("unexpected response from Keycloak")
+		return nil
+	}
+
+	ret := make([]OIDCUser, 0)
+	err = json.NewDecoder(resp.Body).Decode(&ret)
+	if err != nil {
+		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup"}).Error(err)
+		return nil
+	}
+	return ret
 }
 
 // Determines if the user is an active member, allowing for a dev mode override
