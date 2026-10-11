@@ -27,13 +27,19 @@ WHERE id = $1 AND status = 'pending';
 -- name: RespondToDecision :one
 UPDATE candidate_decision
 SET status = $2, responded_at = now()
-WHERE id = $1 AND username = $3 AND status = 'pending'
+WHERE id = $1 
+    AND username = $3 
+    AND status = 'pending'
+    AND response_deadline > now()
 RETURNING *;
 
 -- name: ListDecisionsForUser :many
-SELECT cd.*, c.position_id, c.period_id
+SELECT cd.*, p.position_name,
+    (cd.status == 'pending' AND cd.response_deadline > now()) AS can_respond
 FROM candidate_decision AS cd
-JOIN candidate AS c 
-ON c.id = cd.candidate_id
+JOIN candidate c
+    ON c.id = cd.candidate_id
+JOIN position p 
+    ON c.id = p.id
 WHERE cd.username = $1
 ORDER BY cd.response_deadline;

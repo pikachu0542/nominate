@@ -8,6 +8,8 @@ package db
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createCandidateDecision = `-- name: CreateCandidateDecision :one
@@ -81,10 +83,13 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 }
 
 const listDecisionsForUser = `-- name: ListDecisionsForUser :many
-SELECT cd.id, cd.candidate_id, cd.username, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline, c.position_id, c.period_id
+SELECT cd.id, cd.candidate_id, cd.username, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline, p.position_name,
+    (cd.status == 'pending' AND cd.response_deadline > now()) AS can_respond
 FROM candidate_decision AS cd
-JOIN candidate AS c 
-ON c.id = cd.candidate_id
+JOIN candidate c
+    ON c.id = cd.candidate_id
+JOIN position p 
+    ON c.id = p.id
 WHERE cd.username = $1
 ORDER BY cd.response_deadline
 `
@@ -97,8 +102,8 @@ type ListDecisionsForUserRow struct {
 	NotifiedAt       *time.Time
 	RespondedAt      *time.Time
 	ResponseDeadline time.Time
-	PositionID       int32
-	PeriodID         int32
+	PositionName     string
+	CanRespond       pgtype.Bool
 }
 
 func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]ListDecisionsForUserRow, error) {
@@ -118,8 +123,8 @@ func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]
 			&i.NotifiedAt,
 			&i.RespondedAt,
 			&i.ResponseDeadline,
-			&i.PositionID,
-			&i.PeriodID,
+			&i.PositionName,
+			&i.CanRespond,
 		); err != nil {
 			return nil, err
 		}
@@ -195,7 +200,10 @@ func (q *Queries) MarkNotified(ctx context.Context, arg MarkNotifiedParams) (Can
 const respondToDecision = `-- name: RespondToDecision :one
 UPDATE candidate_decision
 SET status = $2, responded_at = now()
-WHERE id = $1 AND username = $3 AND status = 'pending'
+WHERE id = $1 
+    AND username = $3 
+    AND status = 'pending'
+    AND response_deadline > now()
 RETURNING id, candidate_id, username, status, notified_at, responded_at, response_deadline
 `
 
