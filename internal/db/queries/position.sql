@@ -1,10 +1,10 @@
 -- name: ListPositions :many
-SELECT position_name 
+SELECT *
 FROM position
 ORDER BY id ASC;
 
 -- name: GetPosition :one
-SELECT position_name
+SELECT *
 FROM position
 WHERE id = $1;
 

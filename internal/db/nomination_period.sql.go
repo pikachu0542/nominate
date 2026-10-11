@@ -10,28 +10,28 @@ import (
 	"time"
 )
 
-const createNominationPeriod = `-- name: CreateNominationPeriod :one
+const createPeriod = `-- name: CreatePeriod :one
 INSERT INTO nomination_period (position_id, opens_at, closes_at)
 VALUES ($1, $2, $3)
 RETURNING id, position_id, opens_at, closes_at
 `
 
-type CreateNominationPeriodParams struct {
+type CreatePeriodParams struct {
 	PositionID int32
 	OpensAt    time.Time
 	ClosesAt   time.Time
 }
 
-type CreateNominationPeriodRow struct {
+type CreatePeriodRow struct {
 	ID         int32
 	PositionID int32
 	OpensAt    time.Time
 	ClosesAt   time.Time
 }
 
-func (q *Queries) CreateNominationPeriod(ctx context.Context, arg CreateNominationPeriodParams) (CreateNominationPeriodRow, error) {
-	row := q.db.QueryRow(ctx, createNominationPeriod, arg.PositionID, arg.OpensAt, arg.ClosesAt)
-	var i CreateNominationPeriodRow
+func (q *Queries) CreatePeriod(ctx context.Context, arg CreatePeriodParams) (CreatePeriodRow, error) {
+	row := q.db.QueryRow(ctx, createPeriod, arg.PositionID, arg.OpensAt, arg.ClosesAt)
+	var i CreatePeriodRow
 	err := row.Scan(
 		&i.ID,
 		&i.PositionID,
@@ -41,14 +41,14 @@ func (q *Queries) CreateNominationPeriod(ctx context.Context, arg CreateNominati
 	return i, err
 }
 
-const getNominationPeriod = `-- name: GetNominationPeriod :one
+const getPeriod = `-- name: GetPeriod :one
 SELECT id, position_id, opens_at, closes_at, consolidated_at
 FROM nomination_period
 WHERE id = $1
 `
 
-func (q *Queries) GetNominationPeriod(ctx context.Context, id int32) (NominationPeriod, error) {
-	row := q.db.QueryRow(ctx, getNominationPeriod, id)
+func (q *Queries) GetPeriod(ctx context.Context, id int32) (NominationPeriod, error) {
+	row := q.db.QueryRow(ctx, getPeriod, id)
 	var i NominationPeriod
 	err := row.Scan(
 		&i.ID,
@@ -60,27 +60,43 @@ func (q *Queries) GetNominationPeriod(ctx context.Context, id int32) (Nomination
 	return i, err
 }
 
-const listAllNominationPeriods = `-- name: ListAllNominationPeriods :many
-SELECT id, position_id, opens_at, closes_at, consolidated_at
-FROM nomination_period
-ORDER BY opens_at ASC
+const listAllPeriods = `-- name: ListAllPeriods :many
+SELECT np.id AS period_id, np.position_id, p.position_name, np.opens_at, np.closes_at,
+       (CASE
+           WHEN now() < np.opens_at THEN 'upcoming'
+           WHEN now() < np.closes_at THEN 'open'
+           ELSE 'closed'
+       END)::text AS status
+FROM nomination_period np
+JOIN position p ON p.id = np.position_id
+ORDER BY np.opens_at DESC
 `
 
-func (q *Queries) ListAllNominationPeriods(ctx context.Context) ([]NominationPeriod, error) {
-	rows, err := q.db.Query(ctx, listAllNominationPeriods)
+type ListAllPeriodsRow struct {
+	PeriodID     int32
+	PositionID   int32
+	PositionName string
+	OpensAt      time.Time
+	ClosesAt     time.Time
+	Status       string
+}
+
+func (q *Queries) ListAllPeriods(ctx context.Context) ([]ListAllPeriodsRow, error) {
+	rows, err := q.db.Query(ctx, listAllPeriods)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []NominationPeriod
+	var items []ListAllPeriodsRow
 	for rows.Next() {
-		var i NominationPeriod
+		var i ListAllPeriodsRow
 		if err := rows.Scan(
-			&i.ID,
+			&i.PeriodID,
 			&i.PositionID,
+			&i.PositionName,
 			&i.OpensAt,
 			&i.ClosesAt,
-			&i.ConsolidatedAt,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -92,15 +108,15 @@ func (q *Queries) ListAllNominationPeriods(ctx context.Context) ([]NominationPer
 	return items, nil
 }
 
-const listOpenNominationPeriods = `-- name: ListOpenNominationPeriods :many
+const listOpenPeriods = `-- name: ListOpenPeriods :many
 SELECT id, position_id, opens_at, closes_at, consolidated_at
 FROM nomination_period
 WHERE consolidated_at IS NULL
 ORDER BY opens_at ASC
 `
 
-func (q *Queries) ListOpenNominationPeriods(ctx context.Context) ([]NominationPeriod, error) {
-	rows, err := q.db.Query(ctx, listOpenNominationPeriods)
+func (q *Queries) ListOpenPeriods(ctx context.Context) ([]NominationPeriod, error) {
+	rows, err := q.db.Query(ctx, listOpenPeriods)
 	if err != nil {
 		return nil, err
 	}

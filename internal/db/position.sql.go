@@ -36,37 +36,37 @@ func (q *Queries) DeletePosition(ctx context.Context, id int32) (Position, error
 }
 
 const getPosition = `-- name: GetPosition :one
-SELECT position_name
+SELECT id, position_name
 FROM position
 WHERE id = $1
 `
 
-func (q *Queries) GetPosition(ctx context.Context, id int32) (string, error) {
+func (q *Queries) GetPosition(ctx context.Context, id int32) (Position, error) {
 	row := q.db.QueryRow(ctx, getPosition, id)
-	var position_name string
-	err := row.Scan(&position_name)
-	return position_name, err
+	var i Position
+	err := row.Scan(&i.ID, &i.PositionName)
+	return i, err
 }
 
 const listPositions = `-- name: ListPositions :many
-SELECT position_name 
+SELECT id, position_name
 FROM position
 ORDER BY id ASC
 `
 
-func (q *Queries) ListPositions(ctx context.Context) ([]string, error) {
+func (q *Queries) ListPositions(ctx context.Context) ([]Position, error) {
 	rows, err := q.db.Query(ctx, listPositions)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []Position
 	for rows.Next() {
-		var position_name string
-		if err := rows.Scan(&position_name); err != nil {
+		var i Position
+		if err := rows.Scan(&i.ID, &i.PositionName); err != nil {
 			return nil, err
 		}
-		items = append(items, position_name)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
