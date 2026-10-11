@@ -29,40 +29,48 @@ func NewServer(queries *db.Queries, cfg *config.Config, pool *pgxpool.Pool, oidc
 }
 
 // Register API routes to the server
-func (s *Server) RegisterRoutes(router *gin.Engine, csh cshAuth.CSHAuth) {
+func (s *Server) RegisterRoutes(r *gin.Engine, csh cshAuth.CSHAuth) {
 
-	// Routes to handle CSH auth
-	auth := router.Group("/auth")
-	auth.GET("/login", csh.AuthRequest)
-	auth.GET("/callback", csh.AuthCallback)
-	auth.GET("/logout", csh.AuthLogout)
+	// ---------------------------------------------------
+	//			    CSH AUTH ROUTES
+	// ---------------------------------------------------
+	r.GET("/auth/login", csh.AuthRequest)
+	r.GET("/auth/callback", csh.AuthCallback)
+	r.GET("/auth/logout", csh.AuthLogout)
 
-	position := router.Group("/positions")
-	position.GET("", csh.AuthWrapper(s.listPositions))
-	position.POST("", csh.AuthWrapper(s.createPosition))
+	r.GET("/", csh.AuthWrapper(s.GetHomepage))
 
-	period := router.Group("/periods")
-	period.GET("", csh.AuthWrapper(s.listOpenPeriods))
-	period.GET("/all", csh.AuthWrapper(s.listAllPeriods))
-	period.GET("/:id", csh.AuthWrapper(s.getPeriodById))
-	period.POST("/create", csh.AuthWrapper(s.createPeriod))
-	period.GET("/:id/nominations", s.listNominationsForPeriod)
-	period.GET("/:id/nominated_users", s.listNominatedUsersForPeriod)
+	// Health check route
+	r.GET("/health", csh.AuthWrapper(s.healthCheck))
 
-	nomination := router.Group("/nomination")
-	nomination.POST("", s.createNomination)
+	// ---------------------------------------------------
+	//			    POSITION ROUTES
+	// ---------------------------------------------------
+	r.GET("/position/list", csh.AuthWrapper(s.listPositions))
+	r.POST("/position/create", csh.AuthWrapper(s.createPosition))
 
-	decision := router.Group("/decision")
-	decision.GET("", csh.AuthWrapper(s.listDecisionsForUser))
-	decision.POST("/:id/respond", csh.AuthWrapper(s.respondToDecision))
+	// ---------------------------------------------------
+	//			    NOMINATION PERIOD ROUTES
+	// ---------------------------------------------------
+	r.GET("/period/open", csh.AuthWrapper(s.listOpenPeriods))
+	r.GET("/period/all", csh.AuthWrapper(s.listAllPeriods))
+	r.GET("/period/:id", csh.AuthWrapper(s.getPeriodById))
+	r.GET("/period/new", csh.AuthWrapper(s.GetCreatePeriodPage))
+	r.POST("/period/new", csh.AuthWrapper(s.CreatePeriod))
+	r.GET("/period/:id/nominations", csh.AuthWrapper(s.listNominationsForPeriod))
+	r.GET("/period/:id/users", csh.AuthWrapper(s.listNominatedUsersForPeriod))
 
-	router.GET("/", csh.AuthWrapper(s.GetHomepage))
+	// ---------------------------------------------------
+	//			    NOMINATION ROUTES
+	// ---------------------------------------------------
+	r.GET("/nominate", csh.AuthWrapper(s.GetNominatePage))
+	r.POST("/nominate", csh.AuthWrapper(s.PostNomination))
 
-	router.GET("/nominate", csh.AuthWrapper(s.GetNominatePage))
-	router.POST("/nominate", csh.AuthWrapper(s.PostNominate))
-
-	// Health check
-	router.GET("/health", csh.AuthWrapper(s.healthCheck))
+	// ---------------------------------------------------
+	//			    DECISION ROUTES
+	// ---------------------------------------------------
+	r.GET("/decisions", csh.AuthWrapper(s.listDecisionsForUser))
+	r.POST("/decision/:id/respond", csh.AuthWrapper(s.respondToDecision))
 }
 
 // Health check route - used to ensure the server is still running
