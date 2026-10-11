@@ -2,7 +2,6 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -27,10 +26,12 @@ type OIDCClient struct {
 }
 
 type OIDCUser struct {
-	Uuid     string `json:"id"`
-	Username string `json:"username"`
-	Gatekeep bool   `json:"result"`
-	SlackUID string `json:"slackuid"`
+	Uuid      string `json:"id"`
+	FirstName string `json:"firstname"`
+	LastName  string `json:"lastname"`
+	Username  string `json:"username"`
+	Gatekeep  bool   `json:"result"`
+	SlackUID  string `json:"slackuid"`
 }
 
 var groupCache map[string]string
@@ -138,11 +139,11 @@ func (client *OIDCClient) FindOIDCGroupID(name string) string {
 	//it returns as an array for SOME reason, so we cut to the group we want
 	group := ret[0]
 	// and now we have SUBgroups, so we do this fucked parse
-	subGroups := group["subGroups"].([]any)
-	fmt.Println(subGroups)
-	subGroup := subGroups[0].(map[string]interface{})
-	fmt.Println(subGroup)
-	gid := subGroup["id"].(string)
+	// subGroups := group["subGroups"].([]any)
+	// fmt.Println(subGroups)
+	// subGroup := subGroups[0].(map[string]interface{})
+	// fmt.Println(subGroup)
+	gid := group["id"].(string)
 	groupCache[name] = gid
 	return gid
 
