@@ -1,0 +1,36 @@
+{{ template "header.tmpl" . }}
+
+<div class="container main p-5">
+    <h1 class="mb-4">{{ .Title }}</h1>
+
+    {{ if not .Periods }}
+        <div class="alert alert-info">There are no nomination periods to show.</div>
+    {{ else }}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Opens</th>
+                <th>Closes</th>
+                {{ if .ShowStatus }}<th>Status</th>{{ end }}
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .Periods }}
+            <tr>
+                <td>{{ .PositionName }}</td>
+                <td>{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</td>
+                <td>{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</td>
+                {{ if $.ShowStatus }}<td>{{ .Status }}</td>{{ end }}
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+    {{ end }}
+
+    {{ if not .ShowStatus }}
+        <a href="/nominate" class="btn btn-primary">Nominate someone</a>
+    {{ end }}
+</div>
+</body>
+</html>

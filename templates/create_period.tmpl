@@ -1,0 +1,35 @@
+{{ template "header.tmpl" . }}
+
+<div class="container main p-5">
+    <h1 class="mb-4">Open Nominations</h1>
+
+    {{ if .Success }}
+        <div class="alert alert-success">Nominations opened!</div>
+    {{ end }}
+    {{ if .Error }}
+        <div class="alert alert-danger">{{ .Error }}</div>
+    {{ end }}
+
+    <form method="POST" action="/period/new" class="card p-4">
+        <div class="mb-3">
+            <label class="form-label">Positions</label>
+            {{ range .Positions }}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="position_ids" value="{{ .ID }}" id="pos-{{ .ID }}">
+                <label class="form-check-label" for="pos-{{ .ID }}">{{ .PositionName }}</label>
+            </div>
+            {{ end }}
+            <div class="form-text">Nominations open immediately for every position you check.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="closes_at" class="form-label">Closes</label>
+            <input type="datetime-local" class="form-control" id="closes_at" name="closes_at" required>
+            <div class="form-text">Eastern time.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Open Nominations</button>
+    </form>
+</div>
+</body>
+</html>
