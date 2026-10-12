@@ -152,8 +152,9 @@ func (client *OIDCClient) FindOIDCGroupID(name string) string {
 // Retreives a list of users in a specific OIDC group
 func (client *OIDCClient) GetOIDCGroup(groupID string) []OIDCUser {
 	htclient := &http.Client{}
+
 	//active
-	req, err := http.NewRequest("GET", client.providerBase+"/auth/admin/realms/csh/groups/"+groupID+"/members", nil)
+	req, err := http.NewRequest("GET", client.providerBase+"/auth/admin/realms/csh/groups/"+groupID+"/members?max=500", nil)
 	if err != nil {
 		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup"}).Error(err)
 		return nil
@@ -183,6 +184,12 @@ func (client *OIDCClient) GetOIDCGroup(groupID string) []OIDCUser {
 		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup"}).Error(err)
 		return nil
 	}
+
+	// Log a warning to prevent potential silent failures
+	if len(ret) >= 500 {
+		logging.Logger.WithFields(logrus.Fields{"method": "GetOIDCGroup", "count": len(ret)}).Warn("Member list may be truncated, raise max")
+	}
+
 	return ret
 }
 

@@ -12,8 +12,8 @@ import (
 
 // Input data for submitting a nomination
 type submitNominationRequest struct {
-	PeriodID  int32    `json:"period_id" binding:"required"`
-	Usernames []string `json:"usernames" binding:"required,min=1,dive,required"`
+	PeriodID  int32    `json:"period_id" form:"period_id" binding:"required"`
+	Usernames []string `json:"usernames" form:"usernames" binding:"required,min=1,dive,required"`
 }
 
 // Creates a new nomination in the database
@@ -91,7 +91,7 @@ func (s *Server) GetNominatePage(c *gin.Context) {
 		return
 	}
 
-	members := s.OIDC.GetOIDCGroup(s.OIDC.FindOIDCGroupID("active"))
+	members := s.OIDC.GetOIDCGroup(s.OIDC.FindOIDCGroupID("onfloor"))
 
 	// Checks the query params to determine whether there should be a pre-selected position
 	selectedPeriod, _ := strconv.ParseInt(c.Query("period"), 10, 32)
