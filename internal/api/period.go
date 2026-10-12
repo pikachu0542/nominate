@@ -22,21 +22,33 @@ type createPeriodForm struct {
 func (s *Server) GetCreatePeriodPage(c *gin.Context) {
 	user := util.GetUserData(c)
 	if !util.IsChair(s.Cfg, user) {
-		c.String(http.StatusForbidden, "Only the chairperson can open nominations.")
+		c.HTML(http.StatusForbidden, "forbidden.tmpl", gin.H{
+			"Username":      user.Username,
+			"FullName":      user.FullName,
+			"EBoard":        util.IsEboard(s.Cfg, user),
+			"Chair":         util.IsChair(s.Cfg, user),
+			"AllowedGroups": "eboard-chairman",
+		})
 		return
 	}
 
 	positions, err := s.Queries.ListPositions(c.Request.Context())
 	if err != nil {
-		c.String(http.StatusInternalServerError, "failed to load positions")
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "create_period.tmpl", gin.H{
 		"Username":  user.Username,
 		"FullName":  user.FullName,
-		"EBoard":    true,
-		"Groups":    user.Groups,
+		"EBoard":    util.IsEboard(s.Cfg, user),
+		"Chair":     util.IsChair(s.Cfg, user),
 		"Positions": positions,
 		"Success":   c.Query("success") != "",
 		"Error":     c.Query("error"),
@@ -48,7 +60,13 @@ func (s *Server) CreatePeriod(c *gin.Context) {
 	user := util.GetUserData(c)
 
 	if !util.IsChair(s.Cfg, user) {
-		c.String(http.StatusForbidden, "Only the chairperson can open nominations.")
+		c.HTML(http.StatusForbidden, "forbidden.tmpl", gin.H{
+			"Username":      user.Username,
+			"FullName":      user.FullName,
+			"EBoard":        util.IsEboard(s.Cfg, user),
+			"Chair":         util.IsChair(s.Cfg, user),
+			"AllowedGroups": "eboard-chairman",
+		})
 		return
 	}
 
@@ -105,25 +123,30 @@ func (s *Server) CreatePeriod(c *gin.Context) {
 
 // Retreives a specific nomination period using its unique id
 func (s *Server) getPeriodById(c *gin.Context) {
-	// user := util.GetUserData(c)
+	user := util.GetUserData(c)
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse period id to an integer"})
 		return
 	}
 
-	period, err := s.Queries.GetPeriod(c.Request.Context(), int32(id))
+	period, err := s.Queries.GetPeriodById(c.Request.Context(), int32(id))
 	if err != nil {
 		// No period with the specified id
 		if errors.Is(err, pgx.ErrNoRows) {
+			// TODO: Create a NotFound error template file
 			c.JSON(http.StatusNotFound, gin.H{"error": "No period found with that id"})
 			return
 		}
 
 		// Any other error
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
-			"Error": err.Error(),
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
 		})
 		return
 	}
@@ -139,19 +162,24 @@ func (s *Server) listOpenPeriods(c *gin.Context) {
 	periods, err := s.Queries.ListOpenPeriodsWithPosition(c.Request.Context())
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
-			"Error": err.Error(),
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
 		})
 		return
 	}
 
-	c.HTML(http.StatusOK, "periods.tmpl", gin.H{
-		"Username":   user.Username,
-		"FullName":   user.FullName,
-		"EBoard":     util.IsEboard(s.Cfg, user),
-		"Groups":     user.Groups,
-		"Title":      "Open Nomination Periods",
-		"Periods":    periods,
-		"ShowStatus": false,
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"Username": user.Username,
+		"FullName": user.FullName,
+		"EBoard":   util.IsEboard(s.Cfg, user),
+		"Chair":    util.IsChair(s.Cfg, user),
+		"Groups":   user.Groups,
+		"Title":    "Open Nomination Periods",
+		"Periods":  periods,
+		"Status":   false,
 	})
 }
 
@@ -159,8 +187,13 @@ func (s *Server) listOpenPeriods(c *gin.Context) {
 func (s *Server) listAllPeriods(c *gin.Context) {
 	user := util.GetUserData(c)
 
+	// Any Eboard member should be able to see the list of all nomination periods
 	if !util.IsEboard(s.Cfg, user) {
 		c.HTML(http.StatusForbidden, "forbidden.tmpl", gin.H{
+			"Username":      user.Username,
+			"FullName":      user.FullName,
+			"EBoard":        util.IsEboard(s.Cfg, user),
+			"Chair":         util.IsChair(s.Cfg, user),
 			"AllowedGroups": "eboard",
 		})
 		return
@@ -169,18 +202,23 @@ func (s *Server) listAllPeriods(c *gin.Context) {
 	periods, err := s.Queries.ListAllPeriods(c.Request.Context())
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
-			"Error": err.Error(),
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
 		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "periods.tmpl", gin.H{
-		"Username":   user.Username,
-		"FullName":   user.FullName,
-		"EBoard":     true,
-		"Groups":     user.Groups,
-		"Title":      "All Nomination Periods",
-		"Periods":    periods,
-		"ShowStatus": true,
+		"Username": user.Username,
+		"FullName": user.FullName,
+		"EBoard":   util.IsEboard(s.Cfg, user),
+		"Chair":    util.IsChair(s.Cfg, user),
+		"Groups":   user.Groups,
+		"Title":    "All Nomination Periods",
+		"Periods":  periods,
+		"Status":   true,
 	})
 }

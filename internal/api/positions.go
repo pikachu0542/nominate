@@ -9,9 +9,17 @@ import (
 
 // Lists all of the defined positions in the database
 func (s *Server) listPositions(c *gin.Context) {
+	user := util.GetUserData(c)
+
 	positions, err := s.Queries.ListPositions(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list positions"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, positions)
@@ -25,7 +33,13 @@ func (s *Server) createPosition(c *gin.Context) {
 	user := util.GetUserData(c)
 
 	if !util.IsEboard(s.Cfg, user) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only E-Board members can create positions"})
+		c.HTML(http.StatusForbidden, "forbidden.tmpl", gin.H{
+			"Username":      user.Username,
+			"FullName":      user.FullName,
+			"EBoard":        util.IsEboard(s.Cfg, user),
+			"Chair":         util.IsChair(s.Cfg, user),
+			"AllowedGroups": "eboard",
+		})
 		return
 	}
 
@@ -39,7 +53,13 @@ func (s *Server) createPosition(c *gin.Context) {
 
 	position, err := s.Queries.CreatePosition(c.Request.Context(), req.Name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create position"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusCreated, position)

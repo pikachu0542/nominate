@@ -26,7 +26,7 @@ func (s *Server) PostNomination(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	period, err := s.Queries.GetPeriod(ctx, req.PeriodID)
+	period, err := s.Queries.GetPeriodById(ctx, req.PeriodID)
 	if err != nil {
 		c.Redirect(http.StatusSeeOther, "/nominate?error=Period+not+found")
 		return
@@ -49,7 +49,7 @@ func (s *Server) PostNomination(c *gin.Context) {
 
 	nomination, err := qtx.CreateNomination(ctx, db.CreateNominationParams{
 		PositionID: period.PositionID,
-		PeriodID:   period.ID,
+		PeriodID:   period.PeriodID,
 	})
 	if err != nil {
 		c.Redirect(http.StatusSeeOther, "/nominate?error=Failed+to+create+period+in+database")
@@ -80,33 +80,54 @@ func (s *Server) GetNominatePage(c *gin.Context) {
 
 	periods, err := s.Queries.ListOpenPeriodsWithPosition(c.Request.Context())
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Failed to retrieve nomination periods: %v", err)
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Groups":   user.Groups,
+			"Error":    err.Error(),
+		})
 		return
 	}
 
 	members := s.OIDC.GetOIDCGroup(s.OIDC.FindOIDCGroupID("active"))
 
+	// Checks the query params to determine whether there should be a pre-selected position
+	selectedPeriod, _ := strconv.ParseInt(c.Query("period"), 10, 32)
+
 	c.HTML(http.StatusOK, "nominate.tmpl", gin.H{
-		"Username": user.Username,
-		"FullName": user.FullName,
-		"Periods":  periods,
-		"Members":  members,
-		"Success":  c.Query("success") != "",
-		"Error":    c.Query("error"),
+		"Username":       user.Username,
+		"FullName":       user.FullName,
+		"EBoard":         util.IsEboard(s.Cfg, user),
+		"Chair":          util.IsChair(s.Cfg, user),
+		"Periods":        periods,
+		"Members":        members,
+		"SelectedPeriod": int32(selectedPeriod),
+		"Success":        c.Query("success") != "",
+		"Error":          c.Query("error"),
 	})
 }
 
 // Retreives a list of all nominations submitted in a given period
 func (s *Server) listNominationsForPeriod(c *gin.Context) {
+	user := util.GetUserData(c)
+
 	periodID, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse period id to integer"})
 		return
 	}
 
 	nominations, err := s.Queries.ListNominationsForPeriod(c.Request.Context(), int32(periodID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list nominations"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, nominations)
@@ -114,15 +135,23 @@ func (s *Server) listNominationsForPeriod(c *gin.Context) {
 
 // Retreives a list of users that have been nominated in a given period
 func (s *Server) listNominatedUsersForPeriod(c *gin.Context) {
+	user := util.GetUserData(c)
+
 	periodID, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid period id"})
 		return
 	}
 
 	nominatedUsers, err := s.Queries.ListNominatedUsersForPeriod(c.Request.Context(), int32(periodID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list nominated users"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, nominatedUsers)

@@ -11,20 +11,35 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type respondToDecisionForm struct {
+	Status string `form:"status" binding:"required,oneof=accepted declined"`
+}
+
 func (s *Server) listDecisionsForUser(c *gin.Context) {
 	user := util.GetUserData(c)
 
 	decisions, err := s.Queries.ListDecisionsForUser(c.Request.Context(), user.Username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list decisions"})
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, decisions)
-}
-
-type respondToDecisionRequest struct {
-	Status string `json:"status" binding:"required,oneof=accepted declined"`
+	c.HTML(http.StatusOK, "decision.tmpl", gin.H{
+		"Username":  user.Username,
+		"FullName":  user.FullName,
+		"EBoard":    util.IsEboard(s.Cfg, user),
+		"Chair":     util.IsChair(s.Cfg, user),
+		"Groups":    user.Groups,
+		"Decisions": decisions,
+		"Success":   c.Query("success") != "",
+		"Error":     c.Query("error"),
+	})
 }
 
 func (s *Server) respondToDecision(c *gin.Context) {
@@ -32,29 +47,30 @@ func (s *Server) respondToDecision(c *gin.Context) {
 
 	decisionID, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		c.Redirect(http.StatusSeeOther, "/decision/list?error=Failed+to+parse+decision+id+to+integer")
 		return
 	}
 
-	var req respondToDecisionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req respondToDecisionForm
+	if err := c.ShouldBind(&req); err != nil {
+		c.Redirect(http.StatusSeeOther, "/decision/list?error=Invalid+response")
 		return
 	}
 
-	decision, err := s.Queries.RespondToDecision(c.Request.Context(), db.RespondToDecisionParams{
+	_, err = s.Queries.RespondToDecision(c.Request.Context(), db.RespondToDecisionParams{
 		ID:       int32(decisionID),
 		Status:   db.DecisionStatus(req.Status),
 		Username: user.Username,
 	})
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusConflict, gin.H{"error": "Invalid decision"})
+			c.Redirect(http.StatusSeeOther, "/decision/list?error=Nomination+has+expired")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to respond to decision"})
+		c.Redirect(http.StatusSeeOther, "/decision/list?error=Internal+server+error")
 		return
 	}
 
-	c.JSON(http.StatusOK, decision)
+	c.Redirect(http.StatusSeeOther, "/decision/list?success=1")
 }
