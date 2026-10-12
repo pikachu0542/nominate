@@ -50,6 +50,43 @@ func (q *Queries) GetCandidate(ctx context.Context, id int32) (Candidate, error)
 	return i, err
 }
 
+const listCandidateResultsForPeriod = `-- name: ListCandidateResultsForPeriod :many
+SELECT c.id AS candidate_id, cm.username,
+       COALESCE(cd.status::text, 'not_notified')::text AS decision_status
+FROM candidate c
+JOIN candidate_member cm ON cm.candidate_id = c.id
+LEFT JOIN candidate_decision cd
+       ON cd.candidate_id = c.id AND cd.username = cm.username
+WHERE c.period_id = $1
+ORDER BY c.id, cm.username
+`
+
+type ListCandidateResultsForPeriodRow struct {
+	CandidateID    int32
+	Username       string
+	DecisionStatus string
+}
+
+func (q *Queries) ListCandidateResultsForPeriod(ctx context.Context, periodID int32) ([]ListCandidateResultsForPeriodRow, error) {
+	rows, err := q.db.Query(ctx, listCandidateResultsForPeriod, periodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCandidateResultsForPeriodRow
+	for rows.Next() {
+		var i ListCandidateResultsForPeriodRow
+		if err := rows.Scan(&i.CandidateID, &i.Username, &i.DecisionStatus); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCandidatesForPeriod = `-- name: ListCandidatesForPeriod :many
 SELECT id, period_id, position_id, created_at
 FROM candidate

@@ -35,7 +35,7 @@ RETURNING *;
 
 -- name: ListDecisionsForUser :many
 SELECT cd.*, p.position_name,
-    (cd.status == 'pending' AND cd.response_deadline > now())::boolean AS can_respond
+    (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond
 FROM candidate_decision AS cd
 JOIN candidate c
     ON c.id = cd.candidate_id

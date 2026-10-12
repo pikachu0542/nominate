@@ -41,18 +41,30 @@ func (q *Queries) CreatePeriod(ctx context.Context, arg CreatePeriodParams) (Cre
 	return i, err
 }
 
-const getPeriod = `-- name: GetPeriod :one
-SELECT id, position_id, opens_at, closes_at, consolidated_at
-FROM nomination_period
-WHERE id = $1
+const getPeriodById = `-- name: GetPeriodById :one
+SELECT np.id AS period_id, np.position_id, p.position_name,
+       np.opens_at, np.closes_at, np.consolidated_at
+FROM nomination_period np
+JOIN position p ON p.id = np.position_id
+WHERE np.id = $1
 `
 
-func (q *Queries) GetPeriod(ctx context.Context, id int32) (NominationPeriod, error) {
-	row := q.db.QueryRow(ctx, getPeriod, id)
-	var i NominationPeriod
+type GetPeriodByIdRow struct {
+	PeriodID       int32
+	PositionID     int32
+	PositionName   string
+	OpensAt        time.Time
+	ClosesAt       time.Time
+	ConsolidatedAt *time.Time
+}
+
+func (q *Queries) GetPeriodById(ctx context.Context, id int32) (GetPeriodByIdRow, error) {
+	row := q.db.QueryRow(ctx, getPeriodById, id)
+	var i GetPeriodByIdRow
 	err := row.Scan(
-		&i.ID,
+		&i.PeriodID,
 		&i.PositionID,
+		&i.PositionName,
 		&i.OpensAt,
 		&i.ClosesAt,
 		&i.ConsolidatedAt,

@@ -82,7 +82,7 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 
 const listDecisionsForUser = `-- name: ListDecisionsForUser :many
 SELECT cd.id, cd.candidate_id, cd.username, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline, p.position_name,
-    (cd.status == 'pending' AND cd.response_deadline > now())::boolean AS can_respond
+    (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond
 FROM candidate_decision AS cd
 JOIN candidate c
     ON c.id = cd.candidate_id

@@ -22,3 +22,13 @@ LEFT JOIN candidate_member cm ON c.id = cm.candidate_id
 WHERE c.period_id = $1
 GROUP BY c.id, c.period_id, c.position_id
 ORDER BY c.position_id ASC;
+
+-- name: ListCandidateResultsForPeriod :many
+SELECT c.id AS candidate_id, cm.username,
+       COALESCE(cd.status::text, 'not_notified')::text AS decision_status
+FROM candidate c
+JOIN candidate_member cm ON cm.candidate_id = c.id
+LEFT JOIN candidate_decision cd
+       ON cd.candidate_id = c.id AND cd.username = cm.username
+WHERE c.period_id = $1
+ORDER BY c.id, cm.username;

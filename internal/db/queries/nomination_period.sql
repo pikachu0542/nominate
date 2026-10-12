@@ -3,10 +3,12 @@ INSERT INTO nomination_period (position_id, opens_at, closes_at)
 VALUES ($1, $2, $3)
 RETURNING id, position_id, opens_at, closes_at;
 
--- name: GetPeriod :one
-SELECT *
-FROM nomination_period
-WHERE id = $1;
+-- name: GetPeriodById :one
+SELECT np.id AS period_id, np.position_id, p.position_name,
+       np.opens_at, np.closes_at, np.consolidated_at
+FROM nomination_period np
+JOIN position p ON p.id = np.position_id
+WHERE np.id = $1;
 
 -- name: ListOpenPeriods :many
 SELECT *
