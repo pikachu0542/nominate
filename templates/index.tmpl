@@ -1,13 +1,37 @@
-    {{ template "header.tmpl" . }}
-    
-    <div class="container main p-5">
-        <h1>Hello World</h1>
+{{ template "header.tmpl" . }}
 
-        <ul>
-            {{ range $i, $group := .Groups }}
-            <li>{{$group}}</li>
-            {{end}}
-        </ul>
-    </div>
-  </body>
+<div class="container main p-5">
+    <h1 class="mb-4">Open Nominations</h1>
+
+    {{ if not .Periods }}
+        <div class="alert alert-info">There are no nomination periods currently open.</div>
+    {{ else }}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {{ range .Periods }}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">
+                                <a href="/nominate?period={{ .PeriodID }}" class="stretched-link text-decoration-none">{{ .PositionName }}</a>
+                            </h5>
+                            <dl class="row mb-0 small">
+                                <dt class="col-4 text-body-secondary fw-normal">Opens</dt>
+                                <dd class="col-8">{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                                <dt class="col-4 text-body-secondary fw-normal">Closes</dt>
+                                <dd class="col-8 mb-0">{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                            </dl>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <a href="/nominate?period={{ .PeriodID }}" class="btn btn-primary btn-sm position-relative z-2">Nominate</a>
+                            {{ if $.EBoard }}
+                                <a href="/period/{{ .PeriodID }}/results" class="small position-relative z-2">View results</a>
+                            {{ end }}
+                        </div>
+                    </div>
+                </div>
+            {{ end }}
+        </div>
+    {{ end }}
+</div>
+</body>
 </html>

@@ -29,7 +29,19 @@
 
         <div class="collapse navbar-collapse" id="navbarContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link text-light" href="/"><i class="bi bi-exclamation-circle-fill me-1"></i>Placeholder</a></li>
+          <li class="nav-item"><a class="nav-link text-light" href="/nominate"><i class="bi bi-pencil-square me-1"></i>Submit Nomination</a></li>
+          <li class="nav-item"><a class="nav-link text-light" href="/decision/list"><i class="bi bi-inbox me-1"></i>My Nominations</a></li>
+          {{ if .EBoard }}
+          <li class="nav-item dropdown">
+            <a class="nav-link text-light dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+             <i class="bi bi-lock-fill me-1"></i>Admin
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="/period/new">Open Nominations</a></li>
+              <li><a class="dropdown-item" href="/period/all">All Periods</a></li>
+            </ul>
+          </li>
+          {{ end }}
         </ul>
 
         <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2">

@@ -1,0 +1,44 @@
+{{ template "header.tmpl" . }}
+
+<div class="container main p-5">
+    <h1 class="mb-1">{{ .Period.PositionName }}</h1>
+    <p class="text-body-secondary mb-4">
+        {{ .Period.OpensAt.Format "Jan 2, 2006 3:04 PM" }} to {{ .Period.ClosesAt.Format "Jan 2, 2006 3:04 PM" }}
+    </p>
+
+    {{ if not .Period.ConsolidatedAt }}
+        <div class="alert alert-info">
+            Candidates haven't been generated yet. They are created after nominations close.
+        </div>
+    {{ else if not .Candidates }}
+        <div class="alert alert-info">Nobody was nominated for this position.</div>
+    {{ else }}
+        {{ range .Candidates }}
+        <div class="card mb-3">
+            <div class="card-body d-flex justify-content-between align-items-start">
+                <ul class="list-unstyled mb-0">
+                    {{ range .Members }}
+                    <li class="mb-1">
+                        <strong>{{ .Username }}</strong>
+                        {{ if eq .Status "accepted" }}
+                            <span class="badge text-bg-success ms-2">Accepted</span>
+                        {{ else if eq .Status "declined" }}
+                            <span class="badge text-bg-danger ms-2">Declined</span>
+                        {{ else if eq .Status "pending" }}
+                            <span class="badge text-bg-warning ms-2">Pending</span>
+                        {{ else }}
+                            <span class="badge text-bg-secondary ms-2">Not notified</span>
+                        {{ end }}
+                    </li>
+                    {{ end }}
+                </ul>
+                <span class="fs-5">{{ .Overall }}</span>
+            </div>
+        </div>
+        {{ end }}
+    {{ end }}
+
+    <a href="/period/all" class="btn btn-outline-secondary mt-2">Back to all periods</a>
+</div>
+</body>
+</html>

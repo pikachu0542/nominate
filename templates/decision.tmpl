@@ -1,0 +1,56 @@
+{{ template "header.tmpl" . }}
+
+<div class="container main p-5">
+    <h1 class="mb-4">My Nominations</h1>
+
+    {{ if .Success }}
+        <div class="alert alert-success">Your response was recorded.</div>
+    {{ end }}
+    {{ if .Error }}
+        <div class="alert alert-danger">{{ .Error }}</div>
+    {{ end }}
+
+    {{ if not .Decisions }}
+        <div class="alert alert-info">You haven't been nominated for anything.</div>
+    {{ else }}
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Respond by</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .Decisions }}
+            <tr>
+                <td>{{ .PositionName }}</td>
+                <td>{{ .ResponseDeadline.Format "Jan 2, 2006 3:04 PM" }}</td>
+                <td>
+                    {{ if .CanRespond }}
+                        Pending
+                    {{ else if eq .Status "accepted" }}
+                        Accepted
+                    {{ else }}
+                        Declined
+                    {{ end }}
+                </td>
+                <td class="text-end">
+                    {{ if .CanRespond }}
+                    <form method="POST" action="/decision/{{ .ID }}/respond" class="d-inline">
+                        <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm">Accept</button>
+                        <button type="submit" name="status" value="declined" class="btn btn-outline-danger btn-sm">Decline</button>
+                    </form>
+                    {{ else if .RespondedAt }}
+                        <span class="text-body-secondary small">{{ .RespondedAt.Format "Jan 2, 3:04 PM" }}</span>
+                    {{ end }}
+                </td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+    {{ end }}
+</div>
+</body>
+</html>

@@ -6,29 +6,43 @@
     {{ if not .Periods }}
         <div class="alert alert-info">There are no nomination periods to show.</div>
     {{ else }}
-    <table class="table">
+    <table class="table table-hover">
         <thead>
             <tr>
                 <th>Position</th>
                 <th>Opens</th>
                 <th>Closes</th>
-                {{ if .ShowStatus }}<th>Status</th>{{ end }}
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
             {{ range .Periods }}
-            <tr>
-                <td>{{ .PositionName }}</td>
+            <tr class="position-relative">
+                <td>
+                    {{ if $.EBoard }}
+                        <a href="/period/{{ .PeriodID }}/results" class="stretched-link text-decoration-none">{{ .PositionName }}</a>
+                    {{ else }}
+                        {{ .PositionName }}
+                    {{ end }}
+                </td>
                 <td>{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</td>
                 <td>{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</td>
-                {{ if $.ShowStatus }}<td>{{ .Status }}</td>{{ end }}
+                <td>
+                    {{ if eq .Status "open" }}
+                        <span class="badge text-bg-success">Open</span>
+                    {{ else if eq .Status "upcoming" }}
+                        <span class="badge text-bg-info">Upcoming</span>
+                    {{ else }}
+                        <span class="badge text-bg-secondary">Closed</span>
+                    {{ end }}
+                </td>
             </tr>
             {{ end }}
         </tbody>
     </table>
     {{ end }}
 
-    {{ if not .ShowStatus }}
+    {{ if .OpenOnly }}
         <a href="/nominate" class="btn btn-primary">Nominate someone</a>
     {{ end }}
 </div>
