@@ -1,5 +1,6 @@
-const members = [...document.querySelectorAll('#member-source li')].map(li => li.dataset.username);
-const selected = [];
+const members = [...document.querySelectorAll('#member-source li')]
+    .map(li => ({ username: li.dataset.username, label: li.dataset.label }));
+const selected = []; // usernames only
 let matches = [];
 let active = -1;
 
@@ -19,8 +20,9 @@ function renderDropdown() {
         return;
     }
 
+    // the label contains first name, last name, and username, so all three are searchable
     matches = members
-        .filter(u => !selected.includes(u) && u.toLowerCase().includes(query))
+        .filter(m => !selected.includes(m.username) && m.label.toLowerCase().includes(query))
         .slice(0, 8);
     active = matches.length ? 0 : -1;
 
@@ -30,15 +32,15 @@ function renderDropdown() {
         none.textContent = 'No matching members';
         dropdown.append(none);
     } else {
-        matches.forEach((username, i) => {
+        matches.forEach((member, i) => {
             const item = document.createElement('button');
             item.type = 'button';
             item.className = 'list-group-item list-group-item-action' + (i === active ? ' active' : '');
-            item.textContent = username;
+            item.textContent = member.label;
             // mousedown, not click, so the input doesn't lose focus first
             item.addEventListener('mousedown', (e) => {
                 e.preventDefault();
-                addChip(username);
+                addChip(member);
             });
             dropdown.append(item);
         });
@@ -52,28 +54,29 @@ function highlight(index) {
     items[index]?.scrollIntoView({ block: 'nearest' });
 }
 
-function addChip(username) {
-    if (selected.includes(username)) return;
-    selected.push(username);
+function addChip(member) {
+    if (selected.includes(member.username)) return;
+    selected.push(member.username);
     errorEl.textContent = '';
 
     const chip = document.createElement('span');
     chip.className = 'badge text-bg-primary d-inline-flex align-items-center gap-2 fs-6 fw-normal';
-    chip.dataset.username = username;
-    chip.append(username);
+    chip.dataset.username = member.username;
+    chip.append(member.label);
 
+    // only the bare username is submitted
     const hidden = document.createElement('input');
     hidden.type = 'hidden';
     hidden.name = 'usernames';
-    hidden.value = username;
+    hidden.value = member.username;
 
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'btn-close btn-close-white';
-    remove.setAttribute('aria-label', 'Remove ' + username);
+    remove.setAttribute('aria-label', 'Remove ' + member.label);
     remove.addEventListener('click', (e) => {
         e.stopPropagation();
-        removeChip(username);
+        removeChip(member.username);
     });
 
     chip.append(hidden, remove);
