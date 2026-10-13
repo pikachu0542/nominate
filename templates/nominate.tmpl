@@ -44,7 +44,7 @@
     </form>
 
     <ul id="member-source" hidden>
-        {{ range .Members }}<li data-username="{{.FirstName}} {{ .LastName}} ({{ .Username }})"></li>{{ end }}
+        {{ range .Members }}<li data-username="{{ .Username }}" data-label="{{.FirstName}} {{ .LastName}} ({{ .Username }})"></li>{{ end }}
     </ul>
 
     <script src="/static/js/nominate.js"></script>
