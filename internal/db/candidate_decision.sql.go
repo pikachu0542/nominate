@@ -43,6 +43,25 @@ func (q *Queries) CreateCandidateDecision(ctx context.Context, arg CreateCandida
 	return i, err
 }
 
+const createPendingDecisionsForPeriod = `-- name: CreatePendingDecisionsForPeriod :exec
+INSERT INTO candidate_decision (candidate_id, username, status, response_deadline)
+SELECT cm.candidate_id, cm.username, 'pending'::decision_status, $1::timestamptz
+FROM candidate_member cm
+JOIN candidate c ON c.id = cm.candidate_id
+WHERE c.period_id = $2
+ON CONFLICT (candidate_id, username) DO NOTHING
+`
+
+type CreatePendingDecisionsForPeriodParams struct {
+	ResponseDeadline time.Time
+	PeriodID         int32
+}
+
+func (q *Queries) CreatePendingDecisionsForPeriod(ctx context.Context, arg CreatePendingDecisionsForPeriodParams) error {
+	_, err := q.db.Exec(ctx, createPendingDecisionsForPeriod, arg.ResponseDeadline, arg.PeriodID)
+	return err
+}
+
 const declineExpiredDecision = `-- name: DeclineExpiredDecision :exec
 UPDATE candidate_decision
 SET status = 'declined', responded_at = now()
@@ -81,27 +100,31 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 }
 
 const listDecisionsForUser = `-- name: ListDecisionsForUser :many
-SELECT cd.id, cd.candidate_id, cd.username, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline, p.position_name,
-    (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond
-FROM candidate_decision AS cd
-JOIN candidate c
-    ON c.id = cd.candidate_id
-JOIN position p 
-    ON c.id = p.id
+SELECT cd.id, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline,
+       p.position_name,
+       (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond,
+       COALESCE((
+           SELECT string_agg(cm.username, ', ' ORDER BY cm.username)
+           FROM candidate_member cm
+           WHERE cm.candidate_id = cd.candidate_id
+             AND cm.username <> cd.username
+       ), '')::text AS co_nominees
+FROM candidate_decision cd
+JOIN candidate c ON c.id = cd.candidate_id
+JOIN position p ON p.id = c.position_id
 WHERE cd.username = $1
-ORDER BY cd.response_deadline
+ORDER BY cd.response_deadline DESC
 `
 
 type ListDecisionsForUserRow struct {
 	ID               int32
-	CandidateID      int32
-	Username         string
 	Status           DecisionStatus
 	NotifiedAt       *time.Time
 	RespondedAt      *time.Time
 	ResponseDeadline time.Time
 	PositionName     string
 	CanRespond       bool
+	CoNominees       string
 }
 
 func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]ListDecisionsForUserRow, error) {
@@ -115,14 +138,13 @@ func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]
 		var i ListDecisionsForUserRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.CandidateID,
-			&i.Username,
 			&i.Status,
 			&i.NotifiedAt,
 			&i.RespondedAt,
 			&i.ResponseDeadline,
 			&i.PositionName,
 			&i.CanRespond,
+			&i.CoNominees,
 		); err != nil {
 			return nil, err
 		}
