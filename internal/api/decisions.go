@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +20,19 @@ func (s *Server) listDecisionsForUser(c *gin.Context) {
 	user := util.GetUserData(c)
 
 	decisions, err := s.Queries.ListDecisionsForUser(c.Request.Context(), user.Username)
+
+	// Separate pending decisions from ones that have been responded to
+	// to display them separately in UI
+	var pending, answered []db.ListDecisionsForUserRow
+	for _, d := range decisions {
+		if d.CanRespond {
+			pending = append(pending, d)
+		} else {
+			answered = append(answered, d)
+		}
+	}
+
+	log.Printf("decisions for %q: %d rows", user.Username, len(decisions))
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
 			"Username": user.Username,
@@ -31,14 +45,15 @@ func (s *Server) listDecisionsForUser(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "decision.tmpl", gin.H{
-		"Username":  user.Username,
-		"FullName":  user.FullName,
-		"EBoard":    util.IsEboard(s.Cfg, user),
-		"Chair":     util.IsChair(s.Cfg, user),
-		"Groups":    user.Groups,
-		"Decisions": decisions,
-		"Success":   c.Query("success") != "",
-		"Error":     c.Query("error"),
+		"Username": user.Username,
+		"FullName": user.FullName,
+		"EBoard":   util.IsEboard(s.Cfg, user),
+		"Chair":    util.IsChair(s.Cfg, user),
+		"Pending":  pending,
+		"Answered": answered,
+		"Total":    len(decisions),
+		"Success":  c.Query("success") != "",
+		"Error":    c.Query("error"),
 	})
 }
 

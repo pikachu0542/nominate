@@ -10,46 +10,70 @@
         <div class="alert alert-danger">{{ .Error }}</div>
     {{ end }}
 
-    {{ if not .Decisions }}
+    {{ if eq .Total 0 }}
         <div class="alert alert-info">You haven't been nominated for anything.</div>
-    {{ else }}
-    <table class="table align-middle">
-        <thead>
-            <tr>
-                <th>Position</th>
-                <th>Respond by</th>
-                <th>Status</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range .Decisions }}
-            <tr>
-                <td>{{ .PositionName }}</td>
-                <td>{{ .ResponseDeadline.Format "Jan 2, 2006 3:04 PM" }}</td>
-                <td>
-                    {{ if .CanRespond }}
-                        Pending
-                    {{ else if eq .Status "accepted" }}
-                        Accepted
-                    {{ else }}
-                        Declined
-                    {{ end }}
-                </td>
-                <td class="text-end">
-                    {{ if .CanRespond }}
-                    <form method="POST" action="/decision/{{ .ID }}/respond" class="d-inline">
-                        <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm">Accept</button>
-                        <button type="submit" name="status" value="declined" class="btn btn-outline-danger btn-sm">Decline</button>
+    {{ end }}
+
+    {{ if .Pending }}
+    <h2 class="h5 mb-3">Pending Decisions</h2>
+    <div class="row row-cols-1 row-cols-md-2 g-4 mb-5">
+        {{ range .Pending }}
+        <div class="col">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ .PositionName }}</h5>
+                        <span class="badge text-bg-warning">Pending</span>
+                    </div>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-body-secondary fw-normal">Nominated with</dt>
+                        <dd class="col-7">{{ if .CoNominees }}{{ .CoNominees }}{{ else }}N/A{{ end }}</dd>
+                        <dt class="col-5 text-body-secondary fw-normal">Respond by</dt>
+                        <dd class="col-7 mb-0"><strong>{{ .ResponseDeadline.Format "Jan 2, 2006 3:04 PM" }}</strong></dd>
+                    </dl>
+                </div>
+                <div class="card-footer">
+                    <form method="POST" action="/decision/{{ .ID }}/respond" class="d-flex gap-2">
+                        <button type="submit" name="status" value="accepted" class="btn btn-success btn-sm flex-fill">Accept</button>
+                        <button type="submit" name="status" value="declined" class="btn btn-outline-danger btn-sm flex-fill">Decline</button>
                     </form>
-                    {{ else if .RespondedAt }}
-                        <span class="text-body-secondary small">{{ .RespondedAt.Format "Jan 2, 3:04 PM" }}</span>
-                    {{ end }}
-                </td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+                </div>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+    {{ end }}
+
+    {{ if .Answered }}
+    <h2 class="h5 mb-3">Previous responses</h2>
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {{ range .Answered }}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ .PositionName }}</h5>
+                        {{ if eq .Status "accepted" }}
+                            <span class="badge text-bg-success">Accepted</span>
+                        {{ else }}
+                            <span class="badge text-bg-danger">Declined</span>
+                        {{ end }}
+                    </div>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-body-secondary fw-normal">Nominated with</dt>
+                        <dd class="col-7">{{ if .CoNominees }}{{ .CoNominees }}{{ else }}N/A{{ end }}</dd>
+                        <dt class="col-5 text-body-secondary fw-normal">Respond by</dt>
+                        <dd class="col-7{{ if not .RespondedAt }} mb-0{{ end }}">{{ .ResponseDeadline.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                        {{ if .RespondedAt }}
+                        <dt class="col-5 text-body-secondary fw-normal">Responded</dt>
+                        <dd class="col-7 mb-0">{{ .RespondedAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                        {{ end }}
+                    </dl>
+                </div>
+            </div>
+        </div>
+        {{ end }}
+    </div>
     {{ end }}
 </div>
 </body>
