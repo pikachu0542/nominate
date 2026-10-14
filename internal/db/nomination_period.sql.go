@@ -199,6 +199,7 @@ const listPeriodsPendingConsolidation = `-- name: ListPeriodsPendingConsolidatio
 SELECT id, position_id, opens_at, closes_at, consolidated_at
 FROM nomination_period
 WHERE consolidated_at IS NULL
+AND closes_at < CURRENT_TIMESTAMP
 ORDER BY opens_at ASC
 `
 

@@ -38,6 +38,7 @@ ORDER BY np.opens_at DESC;
 SELECT *
 FROM nomination_period
 WHERE consolidated_at IS NULL
+AND closes_at < CURRENT_TIMESTAMP
 ORDER BY opens_at ASC;
 
 -- name: SetPeriodConsolidated :exec
