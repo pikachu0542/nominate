@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"text/template"
 
 	"github.com/computersciencehouse/nominate/internal/api"
 	"github.com/computersciencehouse/nominate/internal/config"
@@ -56,13 +57,17 @@ func main() {
 
 	server := api.NewServer(queries, cfg, pool, oidcClient)
 
-	router := gin.Default()
-	router.StaticFS("/static", http.Dir("static"))
-	router.LoadHTMLGlob("templates/*")
+	r := gin.Default()
 
-	server.RegisterRoutes(router, csh)
+	r.SetFuncMap(template.FuncMap{
+		"timeLeft": util.TimeLeft,
+	})
+	r.StaticFS("/static", http.Dir("static"))
+	r.LoadHTMLGlob("templates/*")
+
+	server.RegisterRoutes(r, csh)
 
 	// Start the server
-	router.Run(":" + cfg.Port)
+	r.Run(":" + cfg.Port)
 	log.Printf("Listening on port %s", cfg.Port)
 }
