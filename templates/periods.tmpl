@@ -1,49 +1,82 @@
 {{ template "header.tmpl" . }}
 
 <div class="container main p-5">
-    <h1 class="mb-4">{{ .Title }}</h1>
+    <h1 class="mb-4">All Nomination Periods</h1>
 
     {{ if not .Periods }}
-        <div class="alert alert-info">There are no nomination periods to show.</div>
+        <div class="alert alert-info">No nomination periods have been created yet.</div>
     {{ else }}
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Position</th>
-                <th>Opens</th>
-                <th>Closes</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range .Periods }}
-            <tr class="position-relative">
-                <td>
-                    {{ if $.EBoard }}
-                        <a href="/period/{{ .PeriodID }}/results" class="stretched-link text-decoration-none">{{ .PositionName }}</a>
-                    {{ else }}
-                        {{ .PositionName }}
-                    {{ end }}
-                </td>
-                <td>{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</td>
-                <td>{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</td>
-                <td>
-                    {{ if eq .Status "open" }}
-                        <span class="badge text-bg-success">Open</span>
-                    {{ else if eq .Status "upcoming" }}
-                        <span class="badge text-bg-info">Upcoming</span>
-                    {{ else }}
-                        <span class="badge text-bg-secondary">Closed</span>
-                    {{ end }}
-                </td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
-    {{ end }}
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <label class="form-label" for="filter-status">Status</label>
+            <select class="form-select" id="filter-status">
+                <option value="">All statuses</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="filter-position">Position</label>
+            <select class="form-select" id="filter-position">
+                <option value="">All positions</option>
+                {{ range .Positions }}
+                <option value="{{ .ID }}">{{ .PositionName }}</option>
+                {{ end }}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="sort-by">Sort by</label>
+            <select class="form-select" id="sort-by">
+                <option value="opens_desc">Open date, newest first</option>
+                <option value="opens_asc">Open date, oldest first</option>
+                <option value="closes_desc">Close date, newest first</option>
+                <option value="closes_asc">Close date, oldest first</option>
+                <option value="position_asc">Position, A to Z</option>
+                <option value="status_asc">Status (open first)</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-secondary w-100" id="reset-filters">Clear</button>
+        </div>
+    </div>
 
-    {{ if .OpenOnly }}
-        <a href="/nominate" class="btn btn-primary">Nominate someone</a>
+    <p class="text-body-secondary small" id="period-count"></p>
+    <div class="alert alert-info" id="period-empty" hidden>No periods match your filters.</div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="period-grid">
+        {{ range .Periods }}
+            <div class="col"
+                data-status="{{ .Status }}"
+                data-position-id="{{ .PositionID }}"
+                data-position="{{ .PositionName }}"
+                data-opens="{{ .OpensAt.Unix }}"
+                data-closes="{{ .ClosesAt.Unix }}">
+                <div class="card h-100 shadow-sm overflow-hidden">
+                    <div class="border-top border-4 {{ if eq .Status "open" }}border-success{{ else }}border-secondary{{ end }}"></div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h4 class="card-title fw-bold mb-0">
+                                <a href="/period/{{ .PeriodID }}/results" class="stretched-link text-decoration-none">{{ .PositionName }}</a>
+                            </h4>
+                            {{ if eq .Status "open" }}
+                                <span class="badge text-bg-success">Open</span>
+                            {{ else }}
+                                <span class="badge text-bg-secondary">Closed</span>
+                            {{ end }}
+                        </div>
+                        <dl class="row mb-0">
+                            <dt class="col-4 text-body-secondary text-uppercase small fw-normal">Opens</dt>
+                            <dd class="col-8 fw-semibold">{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                            <dt class="col-4 text-body-secondary text-uppercase small fw-normal">Closes</dt>
+                            <dd class="col-8 fw-semibold mb-0">{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+    </div>
+
+    <script src="/static/js/period.js"></script>
     {{ end }}
 </div>
 </body>

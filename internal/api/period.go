@@ -199,7 +199,21 @@ func (s *Server) listAllPeriods(c *gin.Context) {
 		return
 	}
 
-	periods, err := s.Queries.ListAllPeriods(c.Request.Context())
+	ctx := c.Request.Context()
+
+	periods, err := s.Queries.ListAllPeriods(ctx)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
+		return
+	}
+
+	positions, err := s.Queries.ListPositions(ctx)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
 			"Username": user.Username,
@@ -212,13 +226,13 @@ func (s *Server) listAllPeriods(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "periods.tmpl", gin.H{
-		"Username": user.Username,
-		"FullName": user.FullName,
-		"EBoard":   util.IsEboard(s.Cfg, user),
-		"Chair":    util.IsChair(s.Cfg, user),
-		"Groups":   user.Groups,
-		"Title":    "All Nomination Periods",
-		"Periods":  periods,
-		"Status":   true,
+		"Username":  user.Username,
+		"FullName":  user.FullName,
+		"EBoard":    util.IsEboard(s.Cfg, user),
+		"Chair":     util.IsChair(s.Cfg, user),
+		"Groups":    user.Groups,
+		"Title":     "All Nomination Periods",
+		"Periods":   periods,
+		"Positions": positions,
 	})
 }
