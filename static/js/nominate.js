@@ -20,7 +20,7 @@ function renderDropdown() {
         return;
     }
 
-    // the label contains first name, last name, and username, so all three are searchable
+    // allow search by name or username
     matches = members
         .filter(m => !selected.includes(m.username) && m.label.toLowerCase().includes(query))
         .slice(0, 8);
@@ -37,7 +37,6 @@ function renderDropdown() {
             item.type = 'button';
             item.className = 'list-group-item list-group-item-action' + (i === active ? ' active' : '');
             item.textContent = member.label;
-            // mousedown, not click, so the input doesn't lose focus first
             item.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 addChip(member);

@@ -10,12 +10,12 @@ const countEl = document.getElementById('period-count');
 const emptyEl = document.getElementById('period-empty');
 
 const comparators = {
-    opens_desc: (a, b) => b.dataset.opens - a.dataset.opens,
-    opens_asc: (a, b) => a.dataset.opens - b.dataset.opens,
-    closes_desc: (a, b) => b.dataset.closes - a.dataset.closes,
-    closes_asc: (a, b) => a.dataset.closes - b.dataset.closes,
-    position_asc: (a, b) => a.dataset.position.toLowerCase().localeCompare(b.dataset.position.toLowerCase()),
-    status_asc: (a, b) => b.dataset.status.localeCompare(a.dataset.status),
+    "status-asc": (a, b) => b.dataset.status.localeCompare(a.dataset.status),
+    "opens-desc": (a, b) => b.dataset.opens - a.dataset.opens,
+    "opens-asc": (a, b) => a.dataset.opens - b.dataset.opens,
+    "closes-desc": (a, b) => b.dataset.closes - a.dataset.closes,
+    "closes-asc": (a, b) => a.dataset.closes - b.dataset.closes,
+    "position-asc": (a, b) => a.dataset.position.toLowerCase().localeCompare(b.dataset.position.toLowerCase()),
 };
 
 function apply() {
@@ -42,7 +42,7 @@ function apply() {
 document.getElementById('reset-filters').addEventListener('click', () => {
     statusSelect.value = '';
     positionSelect.value = '';
-    sortSelect.value = 'opens_desc';
+    sortSelect.value = 'opens-desc';
     apply();
 });
 

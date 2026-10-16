@@ -12,7 +12,7 @@ import (
 
 // Input data for submitting a nomination
 type submitNominationRequest struct {
-	PeriodID  int32    `json:"period_id" form:"period_id" binding:"required"`
+	PeriodID  int32    `json:"period-id" form:"period-id" binding:"required"`
 	Usernames []string `json:"usernames" form:"usernames" binding:"required,min=1,dive,required"`
 }
 

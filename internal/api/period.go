@@ -14,8 +14,8 @@ import (
 
 // The input data needed to open nomination period(s)
 type createPeriodForm struct {
-	PositionIDs []int32 `form:"position_ids" binding:"required,min=1"`
-	ClosesAt    string  `form:"closes_at" binding:"required"`
+	PositionIDs []int32 `form:"position-ids" binding:"required,min=1"`
+	ClosesAt    string  `form:"closes-at" binding:"required"`
 }
 
 // Displays the page for creating a nomination period

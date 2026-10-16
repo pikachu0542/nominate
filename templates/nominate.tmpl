@@ -6,19 +6,19 @@
     <h1 class="mb-4">Submit a Nomination</h1>
 
     {{ if .Success }}
-        <div class="alert alert-success">Nomination submitted!</div>
+        <div class="alert alert-success h5">Nomination submitted!</div>
     {{ end }}
     {{ if .Error }}
-        <div class="alert alert-danger">{{ .Error }}</div>
+        <div class="alert alert-danger h5">{{ .Error }}</div>
     {{ end }}
 
     {{ if not .Periods }}
-        <div class="alert alert-info">There are no nomination periods currently open.</div>
+        <div class="alert alert-info h5">There are no nomination periods currently open.</div>
     {{ else }}
     <form id="nominate-form" method="POST" action="/nominate" class="card p-4">
         <div class="mb-3">
-            <label for="period_id" class="form-label">Position</label>
-            <select class="form-select" id="period_id" name="period_id" required>
+            <label for="period-id" class="form-label">Position</label>
+            <select class="form-select" id="period-id" name="period-id" required>
                 <option value="" disabled selected>Select a position...</option>
                 {{ range .Periods }}
                     <option value="{{ .PeriodID }}" {{ if eq .PeriodID $.SelectedPeriod }}selected{{ end }}>{{ .PositionName }} (closes {{ .ClosesAt.Format "Jan 2, 3:04 PM" }})</option>
