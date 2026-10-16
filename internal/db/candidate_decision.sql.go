@@ -99,7 +99,7 @@ func (q *Queries) GetCandidateDecision(ctx context.Context, arg GetCandidateDeci
 	return i, err
 }
 
-const listDecisionsForUser = `-- name: ListDecisionsForUser :many
+const listPendingDecisionsForUser = `-- name: ListPendingDecisionsForUser :many
 SELECT cd.id, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline,
        p.position_name,
        (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond,
@@ -116,7 +116,7 @@ WHERE cd.username = $1
 ORDER BY cd.response_deadline DESC
 `
 
-type ListDecisionsForUserRow struct {
+type ListPendingDecisionsForUserRow struct {
 	ID               int32
 	Status           DecisionStatus
 	NotifiedAt       *time.Time
@@ -127,15 +127,15 @@ type ListDecisionsForUserRow struct {
 	CoNominees       string
 }
 
-func (q *Queries) ListDecisionsForUser(ctx context.Context, username string) ([]ListDecisionsForUserRow, error) {
-	rows, err := q.db.Query(ctx, listDecisionsForUser, username)
+func (q *Queries) ListPendingDecisionsForUser(ctx context.Context, username string) ([]ListPendingDecisionsForUserRow, error) {
+	rows, err := q.db.Query(ctx, listPendingDecisionsForUser, username)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListDecisionsForUserRow
+	var items []ListPendingDecisionsForUserRow
 	for rows.Next() {
-		var i ListDecisionsForUserRow
+		var i ListPendingDecisionsForUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Status,

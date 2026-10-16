@@ -1,37 +1,57 @@
 {{ template "header.tmpl" . }}
 
 <div class="container main p-5">
-    <h1 class="mb-4">Open Nominations</h1>
+    <h1 class="mb-1">Open Nominations</h1>
+    <p class="text-body-secondary mb-4">Submit a nomination and view pending actions.</p>
 
-    {{ if not .Periods }}
-        <div class="alert alert-info">There are no nomination periods currently open.</div>
-    {{ else }}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            {{ range .Periods }}
-                <div class="col">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">
-                                <a href="/nominate?period={{ .PeriodID }}" class="stretched-link text-decoration-none">{{ .PositionName }}</a>
-                            </h5>
-                            <dl class="row mb-0 small">
-                                <dt class="col-4 text-body-secondary fw-normal">Opens</dt>
-                                <dd class="col-8">{{ .OpensAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
-                                <dt class="col-4 text-body-secondary fw-normal">Closes</dt>
-                                <dd class="col-8 mb-0">{{ .ClosesAt.Format "Jan 2, 2006 3:04 PM" }}</dd>
-                            </dl>
-                        </div>
-                        <div class="card-footer d-flex justify-content-between align-items-center">
-                            <a href="/nominate?period={{ .PeriodID }}" class="btn btn-primary btn-sm position-relative z-2">Nominate</a>
-                            {{ if $.EBoard }}
-                                <a href="/period/{{ .PeriodID }}/results" class="small position-relative z-2">View results</a>
-                            {{ end }}
+    <div class="d-flex">
+        <div class="row g-4 align-items-start">
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                {{ range .Periods }}
+                    <div class="col">
+                        <div class="card bg-body-tertiary h-100">
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold">{{ .PositionName }}</h5>
+                                <p class="text-body-secondary small mb-0">Opens {{ .OpensAt.Format "Jan 2, 3:04 PM" }}</p>
+                                <p class="text-body-secondary small mb-0">Closes {{ .ClosesAt.Format "Jan 2, 3:04 PM "}}</p>
+                                <div class="d-flex gap-2 mt-3">
+                                    <a href="/nominate?period={{ .PeriodID }}" class="btn btn-primary btn-sm">Nominate</a>
+                                    {{ if $.Chair }}
+                                        <a href="/period/{{ .PeriodID }}/results" class="btn btn-outline-neutral btn-sm">View Results</a>
+                                    {{ end }}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {{ end }}
+                {{ end }}
+            </div>
         </div>
-    {{ end }}
+
+        {{ if .Pending }}
+            <div class="col-lg-3 mt-2 ms-3">
+                <div class="card bg-body-tertiary">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-3">
+                        <span class="text-body-secondary text-uppercase small">Pending Decisions</span>
+                        <span class="badge rounded-pill text-bg-warning">{{ len .Pending }}</span>
+                    </div>
+
+                    {{ range .Pending }}
+                        <div class="px-3 py-3 border-top">
+                            <div class="fw-semibold">{{ .PositionName }}</div>
+                            <div class="text-body-secondary small">Respond by {{ .ResponseDeadline.Format "Jan 2, 3:04 PM" }}</div>
+                            <div class="text-warning small">{{ timeLeft .ResponseDeadline }}</div>
+                            <a href="/decisions" class="btn btn-outline-neutral btn-sm mt-2">Respond</a>
+                        </div>
+                    {{ end }}
+
+                    {{/* View all nominations */}}
+                    <div class="px-3 py-3 border-top small">
+                        <a href="/decisions">View all my nominations</a>
+                    </div>
+                </div>
+            </div>
+        {{ end }}
+    </div>
 </div>
 </body>
 </html>

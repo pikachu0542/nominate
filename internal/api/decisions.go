@@ -19,11 +19,11 @@ type respondToDecisionForm struct {
 func (s *Server) listDecisionsForUser(c *gin.Context) {
 	user := util.GetUserData(c)
 
-	decisions, err := s.Queries.ListDecisionsForUser(c.Request.Context(), user.Username)
+	decisions, err := s.Queries.ListPendingDecisionsForUser(c.Request.Context(), user.Username)
 
 	// Separate pending decisions from ones that have been responded to
 	// to display them separately in UI
-	var pending, answered []db.ListDecisionsForUserRow
+	var pending, answered []db.ListPendingDecisionsForUserRow
 	for _, d := range decisions {
 		if d.CanRespond {
 			pending = append(pending, d)

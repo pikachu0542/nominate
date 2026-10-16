@@ -41,7 +41,7 @@ WHERE id = $1
     AND response_deadline > now()
 RETURNING *;
 
--- name: ListDecisionsForUser :many
+-- name: ListPendingDecisionsForUser :many
 SELECT cd.id, cd.status, cd.notified_at, cd.responded_at, cd.response_deadline,
        p.position_name,
        (cd.status = 'pending' AND cd.response_deadline > now())::boolean AS can_respond,

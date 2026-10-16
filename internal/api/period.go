@@ -159,7 +159,21 @@ func (s *Server) getPeriodById(c *gin.Context) {
 func (s *Server) listOpenPeriods(c *gin.Context) {
 	user := util.GetUserData(c)
 
-	periods, err := s.Queries.ListOpenPeriodsWithPosition(c.Request.Context())
+	ctx := c.Request.Context()
+
+	periods, err := s.Queries.ListOpenPeriodsWithPosition(ctx)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
+			"Username": user.Username,
+			"FullName": user.FullName,
+			"EBoard":   util.IsEboard(s.Cfg, user),
+			"Chair":    util.IsChair(s.Cfg, user),
+			"Error":    err.Error(),
+		})
+		return
+	}
+
+	pendingDecisions, err := s.Queries.ListPendingDecisionsForUser(ctx, user.Username)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{
 			"Username": user.Username,
@@ -177,8 +191,9 @@ func (s *Server) listOpenPeriods(c *gin.Context) {
 		"EBoard":   util.IsEboard(s.Cfg, user),
 		"Chair":    util.IsChair(s.Cfg, user),
 		"Groups":   user.Groups,
-		"Title":    "Open Nomination Periods",
+		"Title":    "My Nominations",
 		"Periods":  periods,
+		"Pending":  pendingDecisions,
 		"Status":   false,
 	})
 }
