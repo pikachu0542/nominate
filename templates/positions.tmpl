@@ -1,0 +1,59 @@
+{{ template "header.tmpl" . }}
+
+<div class="container main p-5">
+    <h1 class="mb-4">Positions</h1>
+
+    {{ if .Success }}
+        <div class="alert alert-success h5">Position added.</div>
+    {{ end }}
+    {{ if .Error }}
+        <div class="alert alert-danger h5">{{ .Error }}</div>
+    {{ end }}
+
+    <div class="card bg-body-tertiary mb-4">
+        <div class="card-body px-4 py-3">
+            <form method="POST" action="/position/create" class="d-flex flex-column flex-sm-row align-items-sm-end gap-3">
+                <div class="flex-grow-1">
+                    <label for="position-name" class="form-label text-body-secondary text-uppercase small mb-1">Create New Position</label>
+                    <input type="text" class="form-control form-control-lg" id="position-name" name="position-name" placeholder="Position name" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg">Add position</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg-body-tertiary overflow-hidden">
+        <table class="table align-middle mb-0" style="--bs-table-bg: transparent;">
+            <thead>
+                <tr>
+                    <th class="fw-normal text-body-secondary text-uppercase small ps-4">Position</th>
+                    <th class="fw-normal text-body-secondary text-uppercase small">Nominations</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .Positions }}
+                    <tr>
+                        <td class="fw-semibold ps-4">{{ .PositionName }}</td>
+                        <td>
+                            {{ if .OpenUntil }}
+                                <span class="badge rounded-pill bg-success-subtle text-success-emphasis fw-normal">Open until {{ .OpenUntil.Format "Jan 2, 3:04 PM" }}</span>
+                            {{ else }}
+                                <span class="text-body-secondary">Not open</span>
+                            {{ end }}
+                        </td>
+                        <td class="text-end pe-4">
+                            {{ if .OpenUntil }}
+                                <button type="button" class="btn btn-outline-tertiary btn-sm" disabled>Already open</button>
+                            {{ else }}
+                                <a href="/period/new?position={{ .ID }}" class="btn btn-primary btn-sm">Open nominations</a>
+                            {{ end }}
+                        </td>
+                    </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

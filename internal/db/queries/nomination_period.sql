@@ -45,3 +45,14 @@ ORDER BY opens_at ASC;
 UPDATE nomination_period
 SET consolidated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
+
+-- name: ListPositionsWithOpenPeriod :many
+SELECT p.id, p.position_name, o.open_until
+FROM position p
+LEFT JOIN (
+    SELECT position_id, max(closes_at) AS open_until
+    FROM nomination_period
+    WHERE opens_at <= now() AND closes_at > now()
+    GROUP BY position_id
+) o ON o.position_id = p.id
+ORDER BY p.position_name;

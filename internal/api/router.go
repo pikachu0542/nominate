@@ -46,7 +46,7 @@ func (s *Server) RegisterRoutes(r *gin.Engine, csh cshAuth.CSHAuth) {
 	//			    POSITION ROUTES
 	// ---------------------------------------------------
 	positions := r.Group("/position")
-	positions.GET("/list", csh.AuthWrapper(s.listPositions))
+	positions.GET("/list", csh.AuthWrapper(s.GetPositionsPage))
 	positions.POST("/create", csh.AuthWrapper(s.createPosition))
 
 	// ---------------------------------------------------

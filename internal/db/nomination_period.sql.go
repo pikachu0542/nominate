@@ -229,6 +229,44 @@ func (q *Queries) ListPeriodsPendingConsolidation(ctx context.Context) ([]Nomina
 	return items, nil
 }
 
+const listPositionsWithOpenPeriod = `-- name: ListPositionsWithOpenPeriod :many
+SELECT p.id, p.position_name, o.open_until
+FROM position p
+LEFT JOIN (
+    SELECT position_id, max(closes_at) AS open_until
+    FROM nomination_period
+    WHERE opens_at <= now() AND closes_at > now()
+    GROUP BY position_id
+) o ON o.position_id = p.id
+ORDER BY p.position_name
+`
+
+type ListPositionsWithOpenPeriodRow struct {
+	ID           int32
+	PositionName string
+	OpenUntil    interface{}
+}
+
+func (q *Queries) ListPositionsWithOpenPeriod(ctx context.Context) ([]ListPositionsWithOpenPeriodRow, error) {
+	rows, err := q.db.Query(ctx, listPositionsWithOpenPeriod)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPositionsWithOpenPeriodRow
+	for rows.Next() {
+		var i ListPositionsWithOpenPeriodRow
+		if err := rows.Scan(&i.ID, &i.PositionName, &i.OpenUntil); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setPeriodConsolidated = `-- name: SetPeriodConsolidated :exec
 UPDATE nomination_period
 SET consolidated_at = CURRENT_TIMESTAMP
