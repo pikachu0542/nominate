@@ -41,13 +41,19 @@ GOOSE_DBSTRING=
 # The directory that contains all the migration files
 GOOSE_MIGRATION_DIR=
 
-# Whether the app should treat any user as if they are an Active Member
+# Required values to authenticate with CSH Auth
+NOMINATE_OIDC_ID=
+NOMINATE_OIDC_SECRET=
+NOMINATE_HOST=
+NOMINATE_JWT_TOKEN=
+NOMINATE_STATE=
+
+# Port the application should run on (default is 8080)
+PORT=8080
+
+# Flags to override certain LDAP group requirements for development purposes
 DEV_DISABLE_ACTIVE_FILTERS=
-
-# Whether to treat any user as if they are an E-Board member
 DEV_FORCE_IS_EBOARD=
-
-# Whether to treat any user as if they were the Chairperson
 DEV_FORCE_IS_CHAIR=
 ```
 
@@ -72,12 +78,12 @@ DEV_FORCE_IS_CHAIR=
   - [X] Display days/hours until response deadline
   - [X] Buttons for user to accept or decline each nomination
   - [ ] Display overall status of the candidate (determined based on responses of each member of the candidate)
-- [ ] Display list of all previous nominations the user received
-  - [ ] Display position
-  - [ ] Display names of co-nominees
-  - [ ] Display user's response
+- [X] Display list of all previous nominations the user received
+  - [X] Display position
+  - [X] Display names of co-nominees
+  - [X] Display user's response
   - [ ] Display overall candidate status
-  - [ ] Display date/time of user's response
+  - [X] Display date/time of user's response
 
 ### Submit Nominations Form
 - [X] Allow members to submit nominations for any open position
@@ -120,12 +126,12 @@ DEV_FORCE_IS_CHAIR=
 - [ ] Display list of candidates for a closed period (after processing by worker)
   - [ ] Show overall status of each candidate
   - [ ] Show response status of every member of a candidate
-- [ ] Restrict access to this page to only Chair
+- [X] Restrict access to this page to only Chair
 
 ### Consolidate Nominations Worker
-- [ ] Insert a row into the candidates table for each unique nomination submitted for this period
-- [ ] Insert a row into the candidate member table for each member of each candidate
-- [ ] Insert a row into the candidate decision table for each member of each candidate, with pending as the default status
+- [X] Insert a row into the candidates table for each unique nomination submitted for this period
+- [X] Insert a row into the candidate member table for each member of each candidate
+- [X] Insert a row into the candidate decision table for each member of each candidate, with pending as the default status
 - [ ] Implement proper error handling for all potential failure points
   - [ ] Ensure error messages are meaningful (whenever possible)
 
@@ -146,8 +152,8 @@ DEV_FORCE_IS_CHAIR=
   - [ ] Ensure error messages are meaningful (whenever possible)
 
 ### Nomination Expiry Worker
-- [ ] Identify pending nominations where the deadline to respond has passed
-  - [ ] Mark each pending nomination as declined
+- [X] Identify pending nominations where the deadline to respond has passed
+  - [X] Mark each pending nomination as declined
 - [ ] Implement proper error handling for all potential failure points
   - [ ] Ensure error messages are meaningful (whenever possible)
 
